@@ -1,68 +1,114 @@
-# Simulated Data Engine Specification
+# Advanced Telemetry Simulation Engine
 
 ## Overview
-Because physical access to hardware at Maitri and Bharati stations is unavailable, the backend incorporates a high-fidelity **Telemetry Simulation Engine**. This engine generates realistic continuous data streams, models natural polar weather variations, and triggers emergency stress scenarios.
+This simulation engine acts as the mathematical core of the Digital Twin. Instead of simply randomizing values, it calculates physical relationships (e.g., power deficits draining battery capacity over time, wind speeds reducing visibility) to feed the interconnected Master Alerts Engine.
 
 ---
 
-## 1. Simulation Parameters & Frequency Matrix
+## 1. Physical Simulation Matrix
 
-| Pillar | Parameter | Base / Normal Value | Fluctuation / Range | Update Frequency | Simulation Method |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Environment** | `outside_temperature_c` | -35.0 °C | -15.0 °C to -60.0 °C (±0.5°C step) | Every 2 sec | Random Walk Algorithm |
-| **Environment** | `wind_speed_kmh` | 40.0 km/h | 10.0 to 140.0 km/h (±3.0 km/h step) | Every 1 sec | Gaussian Noise |
-| **Environment** | `visibility_meters` | 3500 m | 100 m (Whiteout) to 5000 m | Every 5 sec | Inverse to Wind Speed |
-| **Energy** | `power_load_kw` | 245.0 kW | 200.0 kW to 290.0 kW (±5.0 kW step) | Every 1 sec | Sinusoidal + Noise |
-| **Energy** | `fuel_level_percent` | 76.5% | Decrements by 0.001% per cycle | Every 5 sec | Linear Decay |
-| **Energy** | `generator_1_status` | `ACTIVE` | `ACTIVE` / `STANDBY` / `FAULT` | On Event | State Machine |
-| **Infrastructure** | `indoor_temperature_c` | 18.5 °C | 15.0 °C to 22.0 °C (±0.1°C step) | Every 5 sec | Tied to HVAC State |
-| **Infrastructure** | `hvac_status` | `NOMINAL` | `NOMINAL` / `DEGRADED` / `FAULT` | On Event | Threshold Dependent |
-| **Logistics** | `food_supply_days` | 45 Days | Decrements by 1 every 24 hrs | Daily Log | Step Function |
+| System Module | Parameter | Base Value | Fluctuation / Math Logic | Update Freq |
+| :--- | :--- | :--- | :--- | :--- |
+| **Environment** | `outside_temperature_c` | -35.2 °C | Random walk (±0.2°C/tick). Drops faster if wind > 80kmh. | 2 sec |
+| **Environment** | `wind_speed_kmh` | 42.5 km/h | Gaussian noise (±2-5 km/h). Occasional wind gusts (+20 km/h). | 2 sec |
+| **Environment** | `visibility_meters` | 3200 m | Inverse relationship to wind. If wind > 80, visibility drops rapidly. | 2 sec |
+| **Energy** | `total_load_kw` | 245.5 kW | Base load + random noise (±5 kW). Increases if temp drops < -40°C. | 2 sec |
+| **Energy** | `gen_1.power_output_kw`| 185.5 kW | Static while `ACTIVE`. Drops to 0 if `status` changes to `FAULT`. | 2 sec |
+| **Energy** | `battery_charge_kwh` | 138.0 kWh | `current_charge - (power_deficit_kw * (tick_seconds / 3600))` | 2 sec |
+| **Energy** | `fuel.current_level` | 38,250 L | `current_level - (gen_1.fuel_consumption_lph * (tick_seconds / 3600))` | 2 sec |
+| **Infrastructure** | `indoor_temperature_c`| 18.5 °C | Stable if HVAC `nominal`. Drops 2°C per 10s if HVAC `fault`. | 5 sec |
+| **Infrastructure** | `snow_load_on_roof_kg`| 15,000 kg | Increases by 50kg/tick ONLY IF `blizzard_warning` is true. | 5 sec |
 
 ---
 
-## 2. Disaster & Emergency Simulation Scenarios
+## 2. Interconnected Event Triggers (Feeding the Master Engine)
 
-| Scenario ID | Trigger Condition | Parameter Impact | Automated System Response |
+The simulation engine evaluates these physical conditions continuously. When a threshold is breached, it updates the state, which the Master Alerts schema then formats for the frontend.
+
+| Trigger Event | Mathematical Condition | Simulation Impact | Resulting Master Alert |
 | :--- | :--- | :--- | :--- |
-| **SCN-01: Severe Blizzard** | `wind_speed_kmh > 100` AND `visibility_meters < 500` | `blizzard_warning` set to `true` | Triggers **CRITICAL ALERT** banner on frontend; logs field recall protocol. |
-| **SCN-02: Generator Failure** | `generator_1_status == "FAULT"` | `power_load` drops to battery bank; `battery_level` decays rapidly | Autoswitches `generator_2` to `ACTIVE`; alerts station engineer in India. |
-| **SCN-03: Heating Failure** | `hvac_status == "FAULT"` | `indoor_temperature_c` drops by 1.5°C per minute | Highlights affected station module in **FLASHING RED** on the 2D SVG blueprint. |
-| **SCN-04: Critical Fuel Shortage** | `fuel_level_percent < 25%` | `health_score` drops below 60 | Triggers emergency logistics alert requesting priority resupply scheduling. |
+| **Battery Drain Cascade** | `total_load_kw > total_generation_kw` | Subtracts deficit from battery kWh. Updates `estimated_backup_hours`. | `POWER_DEFICIT_ACTIVE` (Warning -> Critical as battery % drops) |
+| **Blizzard Generation** | `wind_speed_kmh > 100` AND `visibility < 500` | Sets `blizzard_active = true`. Accelerates `snow_load_on_roof_kg`. | `SCENARIO-BLIZZARD` |
+| **HVAC Failure Risk** | `indoor_temperature_c < 10.0` | Modules transition to `status_color: "yellow"`. Occupancy risks logged. | `TEMP_CRITICAL_LOW` |
+| **Critical Fuel Threshold** | `fuel.current_level_percent < 10` | Disables Gen-1. Switches `power_sourcing` to `emergency_reserve`. | `FUEL_DEPLETION_CRITICAL` |
 
 ---
 
-## 3. Backend Implementation Reference (`simulationEngine.js`)
+## 3. Node.js Implementation Reference (`simulationEngine.js`)
 
 ```javascript
-// simulationEngine.js - Copy/Paste Blueprint for Backend Developer
+// simulationEngine.js
+// Physical math simulation driving the SIH26060 Digital Twin
 
-const state = {
-  outside_temp: -35.0,
-  wind_speed: 42.0,
-  fuel_percent: 76.5,
-  power_load: 245.0,
-  hvac_status: "NOMINAL",
-  blizzard_warning: false
+const TICK_RATE_SEC = 2; // Simulation runs every 2 seconds
+
+// Master State Object (Mirrors your precise JSON schema structures)
+let state = {
+  energy: {
+    gen_1: { status: "ACTIVE", output_kw: 185.5, consumption_lph: 85.0 },
+    gen_2: { status: "STANDBY", output_kw: 0.0, consumption_lph: 0.0 },
+    fuel: { capacity_l: 50000, current_l: 38250 },
+    battery: { capacity_kwh: 150, current_kwh: 138 },
+    distribution: { load_kw: 245.5, deficit_kw: -60.0 }
+  },
+  environment: {
+    wind_kmh: 42.5,
+    temp_c: -35.2,
+    visibility_m: 3200,
+    blizzard_active: false
+  },
+  infrastructure: {
+    hvac_status: "nominal",
+    lq_temp_c: 18.5,
+    snow_load_kg: 15000
+  }
 };
 
-// Fast-lane simulation tick (Runs every 2 seconds)
-function tickFastLane() {
-  // 1. Simulate environmental fluctuations
-  state.outside_temp += (Math.random() - 0.5) * 0.8;
-  state.wind_speed = Math.max(5, state.wind_speed + (Math.random() - 0.5) * 4);
+function processSimulationTick() {
+  // 1. ENVIRONMENT PHYSICS
+  // Random wind fluctuations
+  state.environment.wind_kmh += (Math.random() - 0.5) * 6;
+  state.environment.wind_kmh = Math.max(5, state.environment.wind_kmh); 
   
-  // 2. Simulate fuel consumption
-  state.fuel_percent = Math.max(0, state.fuel_percent - 0.002);
-  
-  // 3. Evaluate Decision Engine Triggers
-  if (state.wind_speed > 100) {
-    state.blizzard_warning = true;
+  // Visibility degrades as wind increases
+  if (state.environment.wind_kmh > 80) {
+    state.environment.visibility_m = Math.max(100, state.environment.visibility_m - 200);
   } else {
-    state.blizzard_warning = false;
+    state.environment.visibility_m = Math.min(5000, state.environment.visibility_m + 50);
+  }
+
+  // Blizzard trigger
+  state.environment.blizzard_active = (state.environment.wind_kmh > 100 && state.environment.visibility_m < 500);
+
+  // 2. ENERGY PHYSICS
+  // Fluctuate base load slightly
+  state.energy.distribution.load_kw = 245.5 + (Math.random() - 0.5) * 10;
+  
+  // Calculate Deficit (Generation - Load)
+  const total_gen = state.energy.gen_1.output_kw + state.energy.gen_2.output_kw;
+  state.energy.distribution.deficit_kw = total_gen - state.energy.distribution.load_kw;
+
+  // Drain Battery if in deficit (Convert kW to kWh for the 2-second tick)
+  if (state.energy.distribution.deficit_kw < 0) {
+    const drain_kwh = Math.abs(state.energy.distribution.deficit_kw) * (TICK_RATE_SEC / 3600);
+    state.energy.battery.current_kwh -= drain_kwh;
+    state.energy.battery.current_kwh = Math.max(0, state.energy.battery.current_kwh);
+  }
+
+  // Consume Fuel (Convert L/hr to L/tick)
+  const fuel_burn = state.energy.gen_1.consumption_lph * (TICK_RATE_SEC / 3600);
+  state.energy.fuel.current_l -= fuel_burn;
+
+  // 3. INFRASTRUCTURE PHYSICS
+  if (state.environment.blizzard_active) {
+    state.infrastructure.snow_load_kg += 15; // Snow builds rapidly in blizzard
+  }
+  
+  if (state.infrastructure.hvac_status === "fault") {
+    state.infrastructure.lq_temp_c -= 0.1; // Temp drops if HVAC fails
   }
 
   return state;
 }
 
-module.exports = { tickFastLane };
+module.exports = { processSimulationTick };
