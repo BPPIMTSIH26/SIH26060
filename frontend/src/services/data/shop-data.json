@@ -1,0 +1,31 @@
+{
+  "requisitions": [
+    {
+      "id": "REQ-101",
+      "item": "Thermal Fluid Filters",
+      "qty": 12,
+      "priority": "High",
+      "status": "PENDING",
+      "requestedBy": "S. Master Delta",
+      "timestamp": "2026-08-31T08:00:00Z"
+    },
+    {
+      "id": "REQ-102",
+      "item": "MRE Type-C Rations",
+      "qty": 50,
+      "priority": "Medium",
+      "status": "APPROVED",
+      "requestedBy": "S. Master Delta",
+      "timestamp": "2026-08-30T14:30:00Z"
+    },
+    {
+      "id": "REQ-103",
+      "item": "Generator 2 Spark Plugs",
+      "qty": 4,
+      "priority": "Critical",
+      "status": "SHIPPED",
+      "requestedBy": "Authority Prime",
+      "timestamp": "2026-08-29T09:15:00Z"
+    }
+  ]
+}

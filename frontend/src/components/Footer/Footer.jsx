@@ -1,10 +1,8 @@
-import React from 'react';
-
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 transition-colors duration-200 py-3 mt-auto w-full">
+    <footer className="bg-amber-100 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 transition-colors duration-200 py-3 mt-auto w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="flex flex-col sm:flex-row justify-between items-center text-[11px] text-gray-500 dark:text-slate-500 font-medium tracking-wide">

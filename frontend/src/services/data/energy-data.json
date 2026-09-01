@@ -1,0 +1,161 @@
+{
+  "station_id": "Maitri",
+  "timestamp": "2026-08-24T14:00:00Z",
+  "polling_interval_seconds": 2,
+  
+  "generators": {
+    "gen_1": {
+      "generator_id": "GEN-001",
+      "status": "ACTIVE",
+      "status_values": ["ACTIVE", "STANDBY", "STARTING", "SHUTDOWN", "FAULT", "MAINTENANCE"],
+      "status_color": "green",
+      
+      "operation": {
+        "runtime_total_hours": 4250,
+        "runtime_since_maintenance_hours": 850,
+        "fuel_consumption_liters_per_hour": 85.0,
+        "power_output_kw": 185.5,
+        "efficiency_percent": 88
+      },
+      
+      "thresholds": {
+        "maintenance_interval_hours": 5000,
+        "maintenance_due_hours": 750,
+        "fuel_consumption_max_lph": 95,
+        "power_output_max_kw": 250,
+        "overload_threshold_kw": 240
+      }
+    },
+    
+    "gen_2": {
+      "generator_id": "GEN-002",
+      "status": "STANDBY",
+      "status_values": ["ACTIVE", "STANDBY", "STARTING", "SHUTDOWN", "FAULT", "MAINTENANCE"],
+      "status_color": "yellow",
+      
+      "operation": {
+        "runtime_total_hours": 2100,
+        "runtime_since_maintenance_hours": 400,
+        "fuel_consumption_liters_per_hour": 0.0,
+        "power_output_kw": 0,
+        "ready_for_activation": true
+      },
+      
+      "thresholds": {
+        "maintenance_interval_hours": 5000,
+        "maintenance_due_hours": 4600,
+        "power_output_max_kw": 250
+      }
+    }
+  },
+  
+  "fuel_system": {
+    "primary_tank": {
+      "tank_id": "FUEL-TANK-01",
+      "total_capacity_liters": 50000,
+      "current_level_liters": 38250,
+      "current_level_percent": 76.5,
+      "level_trend": "decreasing",
+      "consumption_rate_liters_per_day": 2040,
+      "days_until_empty": 18.8,
+      
+      "thresholds": {
+        "critical_low_liters": 5000,
+        "critical_low_percent": 10,
+        "warning_low_liters": 15000,
+        "warning_low_percent": 30
+      }
+    },
+    
+    "emergency_reserve": {
+      "tank_id": "FUEL-EMERGENCY-01",
+      "total_capacity_liters": 10000,
+      "current_level_liters": 10000,
+      "current_level_percent": 100,
+      "reserve_purpose": "Emergency power for 48 hours of essential systems",
+      "auto_lockout_at_percent": 5
+    }
+  },
+  
+  "power_distribution": {
+    "total_generation_kw": 185.5,
+    "total_load_kw": 245.5,
+    "net_power_deficit_kw": -60.0,
+    "power_sourcing": "battery_backup_active",
+    
+    "loads_by_section": {
+      "living_quarters": {
+        "load_kw": 85.2,
+        "percent_of_total": 34.7,
+        "status": "operational"
+      },
+      "main_lab": {
+        "load_kw": 95.3,
+        "percent_of_total": 38.8,
+        "status": "operational"
+      },
+      "hvac_system": {
+        "load_kw": 35.5,
+        "percent_of_total": 14.5,
+        "status": "operational"
+      },
+      "critical_systems": {
+        "load_kw": 20.0,
+        "percent_of_total": 8.2,
+        "status": "operational"
+      },
+      "other": {
+        "load_kw": 9.5,
+        "percent_of_total": 3.9,
+        "status": "operational"
+      }
+    },
+    
+    "thresholds": {
+      "max_load_kw": 400,
+      "warning_load_kw": 350,
+      "deficit_warning_kw": -50
+    }
+  },
+  
+  "battery_system": {
+    "battery_bank_id": "BATT-BANK-01",
+    "total_capacity_kwh": 150,
+    "current_charge_kwh": 138,
+    "current_charge_percent": 92,
+    "charge_trend": "decreasing",
+    
+    "performance": {
+      "charging_rate_kw": 0,
+      "discharging_rate_kw": 60,
+      "estimated_backup_hours_at_current_load": 2.3,
+      "efficiency_percent": 95
+    },
+    
+    "thresholds": {
+      "critical_low_percent": 10,
+      "warning_low_percent": 20,
+      "max_discharge_rate_kw": 120
+    }
+  },
+  
+  "renewable_energy": {
+    "solar_panels": {
+      "system_id": "SOLAR-001",
+      "status": "operational",
+      "current_output_kw": 60.0,
+      "seasonal_phase": "summer_high_output",
+      "weather_dependent": true
+    }
+  },
+  
+  "interconnections": {
+    "critical_alert": "POWER_DEFICIT_ACTIVE",
+    "alert_description": "Generation (185.5 kW) < Load (245.5 kW). Battery depleting. Recommend reducing non-essential loads or activating Gen-2.",
+    "recommended_action": "Activate Gen-2 or shed 60 kW of non-critical load",
+    "severity": "WARNING"
+  },
+  
+  "system_health_score": 78,
+  "system_health_trend": "deteriorating"
+}
