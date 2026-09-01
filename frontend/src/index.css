@@ -1,6 +1,19 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  /* 1. SCADA Status Colors (Mock Data & System States) */
+  --color-ok: #10b981;       /* Nominal / Emerald 500 */
+  --color-warn: #f59e0b;     /* Warning / Amber 500 */
+  --color-danger: #ef4444;   /* Critical / Red 500 */
+
+  /* 2. Component UI & Alert Theme Colors */
+  --color-success: #10b981;  /* Match OK state */
+  --color-warning: #f59e0b;  /* Match Warn state */
+  --color-critical: #ef4444; /* Match Danger state */
+  
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
 
 /* Tells the browser OS natively whether we are in dark or light mode */
 @layer base {

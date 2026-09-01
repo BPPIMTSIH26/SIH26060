@@ -1,12 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Snowflake } from "lucide-react";
 
 export default function Logo() {
     return (
         <Link to="/" className="flex items-center gap-3 cursor-pointer">
 
-            {/* Official Seal / Badge Container (Reduced from w-16 to w-12 for balance) */}
+            {/* Official Seal / Badge Container */}
             <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
 
                 {/* The Curved Text (SVG) */}
@@ -32,13 +31,18 @@ export default function Logo() {
                     </text>
                 </svg>
 
-                {/* Inner Circular Polar Mark (Scaled down to fit new container) */}
-                <div className="relative z-10 h-6 w-6 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-sm">
-                    <Snowflake size={14} strokeWidth={2.5} className="text-white" />
+                {/* Inner Circular Polar Mark (Updated for blue Antarctica image) */}
+                {/* Changed the background to white so the blue image pops, slightly scaled up to h-7 w-7 */}
+                <div className="relative z-10 h-7 w-7 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-200 dark:border-slate-600 overflow-hidden">
+                    <img 
+                        src="/image.png" 
+                        alt="Antarctica Map" 
+                        className="w-full h-full object-contain p-0.5" 
+                    />
                 </div>
             </div>
 
-            {/* Institutional Identity (Scaled up text to balance with the logo height) */}
+            {/* Institutional Identity */}
             <div className="flex flex-col justify-center">
                 <span className="text-lg font-extrabold tracking-wide leading-none text-gray-900 dark:text-white">
                     NCPOR
