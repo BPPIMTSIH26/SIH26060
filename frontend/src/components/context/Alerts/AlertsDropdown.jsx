@@ -74,7 +74,9 @@ export default function AlertsDropdown({ activeStation }) {
     setReadAlerts(prev => [...prev, alertId]);
   };
 
+  // Helper to format keys like "battery_backup" into "Battery Backup"
   const formatKeyLabel = (key) => {
+    if (!key) return "";
     return key
       .replace(/_/g, " ")
       .replace(/\b\w/g, (char) => char.toUpperCase());
@@ -112,7 +114,7 @@ export default function AlertsDropdown({ activeStation }) {
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative font-sans" ref={dropdownRef}>
       <button
         onClick={() => {
           setAlertsOpen(!alertsOpen);
@@ -217,7 +219,8 @@ export default function AlertsDropdown({ activeStation }) {
                     {alert.affected_systems && (
                       <div className="mb-2 ml-6">
                         <p className="text-xs text-gray-600 dark:text-slate-400">
-                          <span className="font-semibold">Affected:</span> {alert.affected_systems.join(", ")}
+                          {/* CRITICAL FIX: Mapping formatKeyLabel over the array before joining */}
+                          <span className="font-semibold">Affected:</span> {alert.affected_systems.map(formatKeyLabel).join(", ")}
                         </p>
                       </div>
                     )}
