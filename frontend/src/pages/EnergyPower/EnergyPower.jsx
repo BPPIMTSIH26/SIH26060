@@ -59,47 +59,102 @@ export default function Energy() {
   }, [activeStation, pushAlert]);
 
   // =========================================================================
-  // OPTIMIZED SKELETON LOADER
+  // OPTIMIZED SKELETON LOADING STATE
+  // Matches mobile & desktop responsive behavior exactly for all 4 rows
   // =========================================================================
   if (loading) {
     return (
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950 font-sans">
+        
+        {/* Header Skeleton */}
         <div className="mb-2 space-y-2">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-4 w-96 max-w-full" />
         </div>
         
-        {/* Row 1 */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-24 w-full"><Skeleton className="h-full w-full rounded-xl" /></div>)}
+        {/* Row 1: KPI Grid Skeleton (Perfectly matches 2x2 mobile scaling) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-3.5 sm:p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-900/40">
+              <Skeleton className="h-9 w-9 sm:h-12 sm:w-12 shrink-0 rounded-xl" />
+              <div className="space-y-1.5 sm:space-y-2 flex-1 w-full">
+                <Skeleton className="h-2.5 sm:h-3 w-16 sm:w-24" />
+                <Skeleton className="h-4 sm:h-6 w-12 sm:w-20" />
+              </div>
+            </div>
+          ))}
         </div>
-        {/* Row 2 */}
+
+        {/* Row 2: Charts & Alerts */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 h-[300px]"><Skeleton className="h-full w-full rounded-xl" /></div>
-          <div className="lg:col-span-1 h-[300px]"><Skeleton className="h-full w-full rounded-xl" /></div>
+          <div className="lg:col-span-2 flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[300px]">
+            <div className="flex justify-between mb-4">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-32 hidden sm:block" />
+            </div>
+            <Skeleton className="flex-1 w-full rounded-xl" />
+          </div>
+
+          <div className="lg:col-span-1 flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[300px]">
+            <div className="flex justify-between mb-4">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+            </div>
+          </div>
         </div>
-        {/* Row 3 */}
+
+        {/* Row 3: Sources Table & Batteries */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 h-[300px]"><Skeleton className="h-full w-full rounded-xl" /></div>
-          <div className="lg:col-span-1 h-[300px]"><Skeleton className="h-full w-full rounded-xl" /></div>
+          <div className="lg:col-span-2 flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[300px]">
+            <div className="flex justify-between mb-6">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-6 w-full rounded-lg" />
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+            </div>
+          </div>
+
+          <div className="lg:col-span-1 flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[300px]">
+            <div className="flex justify-between mb-4">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
+            </div>
+          </div>
         </div>
-        {/* Row 4 */}
+
+        {/* Row 4: Power Distribution & Fuel */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="h-[250px]"><Skeleton className="h-full w-full rounded-xl" /></div>
-          <div className="h-[250px]"><Skeleton className="h-full w-full rounded-xl" /></div>
+          {[1, 2].map((card) => (
+            <div key={card} className="flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[250px]">
+              <div className="flex justify-between mb-4">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
   if (error || !data) {
-    return <div className="text-red-500 font-mono p-6">Error loading energy data: {error}</div>;
+    return <div className="text-red-500 font-sans p-6 font-semibold">Error loading energy data: {error}</div>;
   }
 
   // =========================================================================
   // DATA MAPPING (100% JSON Utilization)
   // =========================================================================
-  
   const pwr = data.power_distribution || {};
   const isDeficit = (pwr.net_power_deficit_kw ?? 0) < 0;
 
@@ -110,7 +165,6 @@ export default function Energy() {
     { label: "Battery Status", value: `${data.battery_system?.current_charge_percent ?? 0}%`, status: (data.battery_system?.current_charge_percent ?? 0) > 30 ? "ok" : "danger", icon: Battery },
   ];
 
-  // Map sources for table
   const sources = [
     { 
       id: data.generators?.gen_1?.generator_id || "GEN-001", 
@@ -141,7 +195,6 @@ export default function Energy() {
     },
   ];
 
-  // Map battery
   const batteries = [{
     id: data.battery_system?.battery_bank_id || "BATT-01",
     charge: data.battery_system?.current_charge_percent ?? 0,
@@ -153,7 +206,6 @@ export default function Energy() {
     trend: data.battery_system?.charge_trend ?? "stable"
   }];
 
-  // Generate mock past 24h series ending in current load/gen
   const powerSeries = Array.from({ length: 7 }).map((_, i) => ({
     time: `-${(6 - i) * 4}h`,
     gen: i === 6 ? (pwr.total_generation_kw ?? 200) : 200 + Math.random() * 20,
@@ -161,33 +213,29 @@ export default function Energy() {
   }));
 
   return (
-    <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950">
+    <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950 font-sans">
       
       <div className="mb-2">
-        <h1 className="font-mono text-2xl font-bold uppercase tracking-tight text-gray-900 dark:text-slate-100">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
           Energy & Power Matrix
         </h1>
-        <p className="font-mono text-sm text-gray-500 dark:text-slate-400 mt-1">
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
           {activeStation} Station · Live grid telemetry and storage capacity
         </p>
       </div>
 
-      {/* Row 1: KPIs */}
       <EnergyKpiGrid kpis={kpis} />
 
-      {/* Row 2: Charts & Critical Alerts */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <PowerLoadChart powerSeries={powerSeries} />
         <GridAlerts energyJson={data} />
       </div>
 
-      {/* Row 3: Sources & Batteries */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 flex flex-col"><PowerSourcesTable sources={sources} /></div>
         <div className="lg:col-span-1 flex flex-col"><BatteryBanks batteries={batteries} /></div>
       </div>
 
-      {/* Row 4: Power Distribution & Fuel */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PowerDistribution energyJson={data} />
         <FuelSystem energyJson={data} />

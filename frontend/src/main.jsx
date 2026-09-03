@@ -12,7 +12,7 @@ import EnergyPower from './pages/EnergyPower/EnergyPower.jsx'
 import Auth from './components/Auth/Auth.jsx'
 import Edgecase from './components/Others/Edgecase.jsx'
 import { ToastProvider } from "./components/context/ToastContext.jsx";
-import Shop from './pages/Shop/Shop.jsx'
+import Requisitions from './pages/Requisition/Requisitions.jsx'
 
 // Import your newly created route protectors
 import ProtectedRoute from './components/context/ProtectedRoute.jsx' 
@@ -44,7 +44,7 @@ const router = createBrowserRouter(
         <Route path='Environment' element={<Environment />} />
         <Route path='Infrastructure' element={<Infrastructure />} />
         <Route path='EnergyPower' element={<EnergyPower />} />
-        <Route path='shop' element={<Shop />} />
+        <Route path='shop' element={<Requisitions />} />
       </Route>
 
 
