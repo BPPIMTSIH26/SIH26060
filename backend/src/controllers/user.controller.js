@@ -1,34 +1,53 @@
-
-import User from "../models/userModel";
+import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 
+const createError = (statusCode, message) => {
+    const error = new Error(message);
+    error.statusCode = statusCode;
+    return error;
+};
+
 const generateRefreshAccessToken = async (userId) => {
-    try {
-        const user = await User.findById(userId);
+    const user = await User.findById(userId);
 
-        if (!user) {
-            throw new Error("User with id does not exists");
-        }
-
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
-
-        user.refreshToken = refreshToken;
-
-        await user.save({ validateBeforeSave: false });
-
-        return { accessToken, refreshToken };
-    } catch (err) {
-        throw new Error("Error generating refresh token");
+    if (!user) {
+        throw createError(
+            404,
+            "User with id does not exist"
+        );
     }
+
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+
+    await user.save({
+        validateBeforeSave: false
+    });
+
+    return {
+        accessToken,
+        refreshToken
+    };
+};
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax"
 };
 
 const refreshAccessToken = async (req, res) => {
     const incomingRefreshToken =
-        req.cookies.refreshToken || req.body.refreshToken;
+        req.cookies?.refreshToken ||
+        req.body?.refreshToken;
 
     if (!incomingRefreshToken) {
-        throw new Error(401, "Unauthorized request");
+        throw createError(
+            401,
+            "Unauthorized request"
+        );
     }
 
     try {
@@ -37,94 +56,188 @@ const refreshAccessToken = async (req, res) => {
             process.env.REFRESH_TOKEN_SECRET
         );
 
-        const user = await User.findById(decodedToken?._id);
+        const user = await User.findById(
+            decodedToken?._id
+        ).select("+refreshToken");
 
         if (!user) {
-            throw new Error(401, "Invalid refresh token");
+            throw createError(
+                401,
+                "Invalid refresh token"
+            );
         }
 
-        if (incomingRefreshToken !== user.refreshToken) {
-            throw new Error(401, "Refresh token is expired or used");
+        if (
+            incomingRefreshToken !==
+            user.refreshToken
+        ) {
+            throw createError(
+                401,
+                "Refresh token is expired or has already been used"
+            );
         }
 
-        const options = {
-            httpOnly: true,
-            secure: true
-        };
-
-        const { accessToken, refreshToken } =
-            await generateRefreshAccessToken(user._id);
+        const {
+            accessToken,
+            refreshToken
+        } = await generateRefreshAccessToken(
+            user._id
+        );
 
         return res
             .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", refreshToken, options)
+            .cookie(
+                "accessToken",
+                accessToken,
+                cookieOptions
+            )
+            .cookie(
+                "refreshToken",
+                refreshToken,
+                cookieOptions
+            )
             .json({
                 accessToken,
                 refreshToken,
-                message: "Access token refreshed"
+                message: "Access token refreshed successfully"
             });
 
     } catch (error) {
-        throw new Error(
+        if (error.statusCode) {
+            throw error;
+        }
+
+        throw createError(
             401,
-            error?.message || "Invalid refresh token"
+            "Invalid or expired refresh token"
         );
     }
 };
 
-
 const registerUser = async (req, res) => {
-    const { role, email, name, password } = req.body;
+    const {
+        role,
+        station,
+        email,
+        name,
+        password
+    } = req.body || {};
 
     if (
-        [name, email, role, password].some(
-            (field) => field?.trim() === ""
-        )
+        !name?.trim() ||
+        !email?.trim() ||
+        !role?.trim() ||
+        !password?.trim()
     ) {
-        throw new Error(400, "All fields are required");
+        throw createError(
+            400,
+            "Name, email, role and password are required"
+        );
     }
 
+    const validRoles = [
+        "NCPOR Operator",
+        "Station Manager",
+        "Logistics Manager"
+    ];
+
+    if (!validRoles.includes(role)) {
+        throw createError(
+            400,
+            "Invalid role"
+        );
+    }
+
+    if (
+        role !== "NCPOR Operator" &&
+        !station
+    ) {
+        throw createError(
+            400,
+            "Station is required for this role"
+        );
+    }
+
+    if (
+        role === "NCPOR Operator" &&
+        station
+    ) {
+        throw createError(
+            400,
+            "NCPOR Operator cannot be assigned to a station"
+        );
+    }
+
+    if (
+        station &&
+        !["MAITRI", "BHARATI"].includes(station)
+    ) {
+        throw createError(
+            400,
+            "Invalid station. Use MAITRI or BHARATI"
+        );
+    }
+
+    const normalizedEmail = email
+        .trim()
+        .toLowerCase();
+
     const existedUser = await User.findOne({
-        $or: [{ name }, { email }]
+        $or: [
+            { name: name.trim() },
+            { email: normalizedEmail }
+        ]
     });
 
     if (existedUser) {
-        throw new Error(
+        throw createError(
             409,
             "User with this name or email already exists"
         );
     }
 
     const user = await User.create({
-        name,
-        email,
+        name: name.trim(),
+        email: normalizedEmail,
         password,
-        role
+        role,
+        station:
+            role === "NCPOR Operator"
+                ? undefined
+                : station,
+        authProvider: "LOCAL"
     });
 
-    const { accessToken, refreshToken } =
-        await generateRefreshAccessToken(user._id);
+    const {
+        accessToken,
+        refreshToken
+    } = await generateRefreshAccessToken(
+        user._id
+    );
 
-    const createdUser = await User.findById(user._id)
-        .select("-password -refreshToken");
+    const createdUser = await User.findById(
+        user._id
+    ).select("-password -refreshToken");
 
     if (!createdUser) {
-        throw new Error(
+        throw createError(
             500,
             "Error while registering the user"
         );
     }
 
-    const options = {
-        httpOnly: true,
-        secure: true,
-    };
-
     return res
         .status(201)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie(
+            "accessToken",
+            accessToken,
+            cookieOptions
+        )
+        .cookie(
+            "refreshToken",
+            refreshToken,
+            cookieOptions
+        )
         .json({
             message: "User registered successfully",
             user: createdUser
@@ -132,49 +245,139 @@ const registerUser = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
-    const { name, email, password } = req.body || {};
+    const {
+        name,
+        email,
+        password
+    } = req.body || {};
 
-    if ((!name && !email) || !password) {
-        throw new Error(
+    if (
+        (!name && !email) ||
+        !password
+    ) {
+        throw createError(
             400,
-            "name/Email and password are required"
+            "Name/email and password are required"
         );
     }
 
+    const conditions = [];
+
+    if (name) {
+        conditions.push({
+            name: name.trim()
+        });
+    }
+
+    if (email) {
+        conditions.push({
+            email: email.trim().toLowerCase()
+        });
+    }
+
     const user = await User.findOne({
-        $or: [{ name }, { email }]
-    });
+        $or: conditions
+    }).select("+password");
 
     if (!user) {
-        throw new Error(404, "User not found");
+        throw createError(
+            404,
+            "User not found"
+        );
+    }
+
+    if (
+        user.authProvider === "GOOGLE" &&
+        !user.password
+    ) {
+        throw createError(
+            400,
+            "This account uses Google login. Please continue with Google."
+        );
     }
 
     const isPasswordValid =
         await user.isPasswordCorrect(password);
 
     if (!isPasswordValid) {
-        throw new Error(401, "Invalid credentials");
+        throw createError(
+            401,
+            "Invalid credentials"
+        );
     }
 
-    const { accessToken, refreshToken } =
-        await generateRefreshAccessToken(user._id);
+    const {
+        accessToken,
+        refreshToken
+    } = await generateRefreshAccessToken(
+        user._id
+    );
 
-    const loggedInUser = await User.findById(user._id)
-        .select("-password -refreshToken");
-
-    const options = {
-        httpOnly: true,
-        secure: true
-    };
+    const loggedInUser = await User.findById(
+        user._id
+    ).select("-password -refreshToken");
 
     return res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie(
+            "accessToken",
+            accessToken,
+            cookieOptions
+        )
+        .cookie(
+            "refreshToken",
+            refreshToken,
+            cookieOptions
+        )
         .json({
             user: loggedInUser,
             message: "User logged in successfully"
         });
+};
+
+const googleOAuthCallback = async (req, res) => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            throw createError(
+                401,
+                "Google authentication failed"
+            );
+        }
+
+        const {
+            accessToken,
+            refreshToken
+        } = await generateRefreshAccessToken(
+            user._id
+        );
+
+        return res
+            .cookie(
+                "accessToken",
+                accessToken,
+                cookieOptions
+            )
+            .cookie(
+                "refreshToken",
+                refreshToken,
+                cookieOptions
+            )
+            .redirect(
+                `${process.env.FRONTEND_URL}/dashboard`
+            );
+
+    } catch (error) {
+        console.error(
+            "Google OAuth Error:",
+            error
+        );
+
+        return res.redirect(
+            `${process.env.FRONTEND_URL}/login?error=google_auth_failed`
+        );
+    }
 };
 
 const logoutUser = async (req, res) => {
@@ -184,23 +387,21 @@ const logoutUser = async (req, res) => {
             $unset: {
                 refreshToken: 1
             }
-        },
-        {
-            new: true
         }
     );
 
-    const options = {
-        httpOnly: true,
-        secure: true
-    };
-
     return res
         .status(200)
-        .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
+        .clearCookie(
+            "accessToken",
+            cookieOptions
+        )
+        .clearCookie(
+            "refreshToken",
+            cookieOptions
+        )
         .json({
-            message: "User logged out"
+            message: "User logged out successfully"
         });
 };
 
@@ -211,7 +412,10 @@ const getUserById = async (req, res) => {
         .select("-password -refreshToken");
 
     if (!user) {
-        throw new Error(404, "User not found");
+        throw createError(
+            404,
+            "User not found"
+        );
     }
 
     return res
@@ -223,11 +427,15 @@ const getUserById = async (req, res) => {
 };
 
 const getCurrentUser = async (req, res) => {
-    const user = await User.findById(req.user._id)
-        .select("-password -refreshToken");
+    const user = await User.findById(
+        req.user._id
+    ).select("-password -refreshToken");
 
     if (!user) {
-        throw new Error(404, "User not found");
+        throw createError(
+            404,
+            "User not found"
+        );
     }
 
     return res
@@ -245,5 +453,5 @@ export {
     getUserById,
     getCurrentUser,
     refreshAccessToken,
+    googleOAuthCallback
 };
-
