@@ -1,10 +1,6 @@
 import { Navigate } from "react-router-dom";
-import { USE_MOCK_API } from "../../services/config"; // Adjust path if necessary
 
 export default function ProtectedRoute({ children }) {
-    // 🛑 DEV TOGGLE: Instantly grants access while building UI
-    if (USE_MOCK_API) return children; 
-
     const storedSession = localStorage.getItem("polar_twin_user");
     let session = null;
 
@@ -17,9 +13,11 @@ export default function ProtectedRoute({ children }) {
         }
     }
 
+    // If there is NO session, kick them out to the login screen
     if (!session) {
         return <Navigate to="/auth" replace />;
     }
 
+    // If they are logged in, let them view the dashboard layout
     return children;
 }

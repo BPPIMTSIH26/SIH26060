@@ -1,15 +1,13 @@
 import { Navigate } from "react-router-dom";
-import { USE_MOCK_API } from "../../services/config"; // Adjust path if necessary
 
 export default function PublicRoute({ children }) {
-    // 🛑 DEV TOGGLE: Prevents bouncing you away from /auth so you can test the login screen
-    if (USE_MOCK_API) return children; 
-
     const storedSession = localStorage.getItem("polar_twin_user");
     
+    // If the user is logged in, bounce them away from /auth and / to the dashboard
     if (storedSession && storedSession !== "undefined") {
-        return <Navigate to="/" replace />;
+        return <Navigate to="/dashboard" replace />;
     }
 
+    // Otherwise, let them see the Auth or Home page
     return children;
 }
