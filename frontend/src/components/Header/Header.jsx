@@ -9,12 +9,12 @@ import { useToast } from "../context/ToastContext";
 
 // Added Requisitions (Shop) to the navigation bar
 const navLinks = [
-  { label: "Dashboard", to: "/" },
+  { label: "Dashboard", to: "/dashboard" },
   { label: "Infrastructure", to: "/infrastructure" },
   { label: "Environment", to: "/environment" },
   { label: "Energy & Power", to: "/energypower" },
   { label: "Logistics", to: "/logistics" },
-  { label: "Requisitions", to: "/shop" },
+  { label: "Requisitions", to: "/requisitions" },
 ];
 
 export default function Header({ alerts = [], lastUpdate = "Just now", activeStation, setActiveStation }) {
@@ -172,7 +172,7 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
                       </Link>
                     </li>
                     <li>
-                      <Link to="/reset-password" onClick={() => setUserOpen(false)} className="flex items-center px-4 py-2 hover:bg-amber-100/80 dark:hover:bg-slate-700 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+                      <Link to="/resetpassword" onClick={() => setUserOpen(false)} className="flex items-center px-4 py-2 hover:bg-amber-100/80 dark:hover:bg-slate-700 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
                         <KeyRound className="w-4 h-4 mr-3" /> Reset Password
                       </Link>
                     </li>

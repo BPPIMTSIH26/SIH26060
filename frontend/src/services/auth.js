@@ -92,5 +92,23 @@ export const authAPI = {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || "Failed to initiate recovery");
         return data;
+    },
+
+    updatePassword: async (passwordData) => {
+        if (USE_MOCK_API) {
+            await delay(600); // Simulate network latency
+            // In a real app, you'd verify the old password here
+            return { status: "success", message: "Password updated successfully." };
+        }
+
+        const response = await fetch(`${BASE_URL}/users/update-password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Needed so backend knows WHICH user is logged in
+            body: JSON.stringify(passwordData)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to update security credentials.");
+        return data;
     }
 };

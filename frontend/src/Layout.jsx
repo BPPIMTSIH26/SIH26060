@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import Header from './components/Header/header';
-import Footer from './components/Footer/footer';
+import Header from './components/Header/Header';
+import Footer from './components/Footer/Footer';
 import { Outlet } from 'react-router-dom';
 
 import { GlobalAlertProvider } from './components/context/Alerts/GlobalAlertContext'; 
 import GlobalBanner from './components/context/Alerts/GlobalBanner'; 
+import ScrollToTop from './components/context/ScrollToTop';
 
 export default function Layout() {
     const [activeStation, setActiveStation] = useState("Maitri");
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-950">
+        <div className="flex flex-col min-h-screen bg-amber-50 dark:bg-slate-950 transition-colors duration-300">
             <GlobalAlertProvider activeStation={activeStation}>
                 
                 <Header 
@@ -24,6 +25,7 @@ export default function Layout() {
                     it stretches the gap and pushes <main> downwards automatically.
                 */}
                 <GlobalBanner />
+                <ScrollToTop />
                 
                 <main className="grow">
                     <Outlet context={{ activeStation }} />

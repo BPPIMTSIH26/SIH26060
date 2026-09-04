@@ -1,4 +1,6 @@
-import { useState } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom"; // NEW: Imported hooks for URL tracking
 import Login from "./Login";
 import Signup from "./Signup";
 import ForgotPassword from "./ForgotPassword";
@@ -6,10 +8,31 @@ import Logo from "../../../public/Logo"; // Adjust path to your logo
 import ThemeToggle from "../context/ThemeToggle";
 
 export default function Auth() {
-    const [authMode, setAuthMode] = useState('login'); // 'login', 'signup', 'forgot'
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // NEW: Determine initial mode based on the URL hash when the component first loads
+    const getInitialMode = () => {
+        const hash = location.hash.replace('#', '');
+        if (hash === 'signup') return 'signup';
+        if (hash === 'forgot') return 'forgot';
+        return 'login'; // default
+    };
+
+    const [authMode, setAuthMode] = useState(getInitialMode()); 
+
+    // NEW: Listen for URL hash changes (e.g., if the user uses the browser Back/Forward buttons)
+    useEffect(() => {
+        const hash = location.hash.replace('#', '');
+        if (hash === 'signup') setAuthMode('signup');
+        else if (hash === 'forgot') setAuthMode('forgot');
+        else setAuthMode('login');
+    }, [location.hash]);
 
     const handleSwitchMode = (mode) => {
         setAuthMode(mode);
+        // NEW: Silently update the URL hash so it matches the current view
+        navigate(`/auth#${mode}`, { replace: true });
     };
 
     const isRightPanelActive = authMode === 'login' || authMode === 'forgot';
