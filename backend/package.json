@@ -10,10 +10,12 @@
     "mongoose": "^9.9.4",
     "multer": "^2.2.0",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
   "scripts": {
-    "dev": "node --env-file=.env app.js",
+    "dev": "node --env-file=.env src/app.js",
     "seed:stations": "node --env-file=.env src/seed/station.seed.js"
   }
 }

@@ -1,17 +1,32 @@
 import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import {
+    Strategy as GoogleStrategy
+} from "passport-google-oauth20";
+
 import User from "../models/userModel.js";
 
 passport.use(
     new GoogleStrategy(
         {
-            clientID: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: process.env.GOOGLE_REDIRECT_URI
+            clientID:
+                process.env.GOOGLE_CLIENT_ID,
+
+            clientSecret:
+                process.env.GOOGLE_CLIENT_SECRET,
+
+            callbackURL:
+                process.env.GOOGLE_REDIRECT_URI
         },
-        async (accessToken, refreshToken, profile, done) => {
+
+        async (
+            accessToken,
+            refreshToken,
+            profile,
+            done
+        ) => {
             try {
-                const providerId = profile.id;
+                const providerId =
+                    profile.id;
 
                 const email =
                     profile.emails?.[0]?.value
@@ -32,12 +47,17 @@ passport.use(
                     );
                 }
 
-                let user = await User.findOne({
-                    $or: [
-                        { providerId },
-                        { email }
-                    ]
-                });
+                let user =
+                    await User.findOne({
+                        $or: [
+                            {
+                                providerId
+                            },
+                            {
+                                email
+                            }
+                        ]
+                    });
 
                 if (!user) {
                     return done(
@@ -48,17 +68,49 @@ passport.use(
                     );
                 }
 
+                if (!user.isActive) {
+                    return done(
+                        new Error(
+                            "User account is inactive"
+                        ),
+                        null
+                    );
+                }
+
                 if (!user.providerId) {
-                    user.providerId = providerId;
+                    user.providerId =
+                        providerId;
 
                     await user.save({
-                        validateBeforeSave: false
+                        validateBeforeSave:
+                            false
                     });
                 }
 
-                return done(null, user);
+                if (
+                    user.name ===
+                        undefined ||
+                    !user.name
+                ) {
+                    user.name =
+                        name;
+
+                    await user.save({
+                        validateBeforeSave:
+                            false
+                    });
+                }
+
+                return done(
+                    null,
+                    user
+                );
+
             } catch (error) {
-                return done(error, null);
+                return done(
+                    error,
+                    null
+                );
             }
         }
     )
