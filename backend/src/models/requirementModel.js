@@ -4,7 +4,10 @@ const requirementSchema = new Schema(
     {
         requirementNumber: {
             type: String,
-            required: [true, "Requirement number is required"],
+            required: [
+                true,
+                "Requirement number is required"
+            ],
             unique: true,
             uppercase: true,
             trim: true
@@ -12,7 +15,10 @@ const requirementSchema = new Schema(
 
         title: {
             type: String,
-            required: [true, "Requirement title is required"],
+            required: [
+                true,
+                "Requirement title is required"
+            ],
             trim: true
         },
 
@@ -32,13 +38,22 @@ const requirementSchema = new Schema(
                 "Maintenance",
                 "General"
             ],
-            required: [true, "Requirement category is required"]
+            required: [
+                true,
+                "Requirement category is required"
+            ]
         },
 
         quantity: {
             type: Number,
-            required: [true, "Requirement quantity is required"],
-            min: [1, "Quantity must be at least 1"]
+            required: [
+                true,
+                "Requirement quantity is required"
+            ],
+            min: [
+                1,
+                "Quantity must be at least 1"
+            ]
         },
 
         unit: {
@@ -57,7 +72,10 @@ const requirementSchema = new Schema(
         station: {
             type: Schema.Types.ObjectId,
             ref: "Station",
-            required: [true, "Station is required"]
+            required: [
+                true,
+                "Station is required"
+            ]
         },
 
         priority: {
@@ -86,7 +104,10 @@ const requirementSchema = new Schema(
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: "User",
-            required: [true, "Requirement creator is required"]
+            required: [
+                true,
+                "Requirement creator is required"
+            ]
         },
 
         processedBy: {
@@ -129,10 +150,6 @@ requirementSchema.index({
 requirementSchema.index({
     createdBy: 1,
     createdAt: -1
-});
-
-requirementSchema.index({
-    requirementNumber: 1
 });
 
 const Requirement = model(

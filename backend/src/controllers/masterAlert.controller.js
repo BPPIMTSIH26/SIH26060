@@ -1,377 +1,366 @@
-import Alert from "../models/masterAlertModel.js";
+import MasterAlert from "../models/masterAlertModel.js";
 
-import {
-    emitAlertResolved
-} from "../services/socket.service.js";
-
-
-/*
- * Get all alerts
- */
-const getAllAlerts = async (
-    req,
-    res
+const createError = (
+    statusCode,
+    message
 ) => {
-    try {
-        const filter = {};
-
-        /*
-         * Station-based filtering
-         */
-        if (
-            req.user.role !==
-            "NCPOR Operator"
-        ) {
-            if (!req.user.station) {
-                return res.status(403).json({
-                    message:
-                        "User is not assigned to any station"
-                });
-            }
-
-            filter.station =
-                req.user.station;
-        }
-
-        const alerts =
-            await Alert.find(filter)
-                .sort({
-                    triggeredAt: -1
-                })
-                .populate(
-                    "vehicle",
-                    "vehicleNumber type status"
-                )
-                .populate(
-                    "geofence",
-                    "name type"
-                )
-                .populate(
-                    "station",
-                    "name code"
-                );
-
-        return res.status(200).json({
-            message:
-                "Alerts fetched successfully",
-
-            count:
-                alerts.length,
-
-            alerts
-        });
-
-    } catch (error) {
-        console.error(
-            "Get all alerts error:",
-            error
-        );
-
-        return res.status(500).json({
-            message:
-                "Failed to fetch alerts",
-            error:
-                error.message
-        });
-    }
+    const error = new Error(message);
+    error.statusCode = statusCode;
+    return error;
 };
 
-
-/*
- * Get active alerts
- */
-const getActiveAlerts = async (
-    req,
-    res
+const canAccessStation = (
+    user,
+    stationId
 ) => {
-    try {
-        const filter = {
-            isResolved: false
-        };
-
-        /*
-         * Station filtering
-         */
-        if (
-            req.user.role !==
-            "NCPOR Operator"
-        ) {
-            if (!req.user.station) {
-                return res.status(403).json({
-                    message:
-                        "User is not assigned to any station"
-                });
-            }
-
-            filter.station =
-                req.user.station;
-        }
-
-        const alerts =
-            await Alert.find(filter)
-                .sort({
-                    triggeredAt: -1
-                })
-                .populate(
-                    "vehicle",
-                    "vehicleNumber type status"
-                )
-                .populate(
-                    "geofence",
-                    "name type"
-                )
-                .populate(
-                    "station",
-                    "name code"
-                );
-
-        return res.status(200).json({
-            message:
-                "Active alerts fetched successfully",
-
-            count:
-                alerts.length,
-
-            alerts
-        });
-
-    } catch (error) {
-        console.error(
-            "Get active alerts error:",
-            error
-        );
-
-        return res.status(500).json({
-            message:
-                "Failed to fetch active alerts",
-            error:
-                error.message
-        });
+    if (
+        user.role ===
+        "NCPOR Operator"
+    ) {
+        return true;
     }
+
+    if (!user.station) {
+        return false;
+    }
+
+    return (
+        user.station
+            .trim()
+            .toUpperCase() ===
+        stationId
+            .trim()
+            .toUpperCase()
+    );
 };
 
+const createMasterAlert =
+    async (req, res) => {
+        try {
+            const data =
+                req.body || {};
 
-/*
- * Get alert by ID
- */
-const getAlertById = async (
-    req,
-    res
-) => {
-    try {
-        const {
-            id
-        } = req.params;
+            const stationId =
+                data.station_id
+                    ?.trim()
+                    .toUpperCase();
 
-        const alert =
-            await Alert.findById(id)
-                .populate(
-                    "vehicle",
-                    "vehicleNumber type status"
-                )
-                .populate(
-                    "geofence",
-                    "name type"
-                )
-                .populate(
-                    "station",
-                    "name code"
+            if (!stationId) {
+                throw createError(
+                    400,
+                    "station_id is required"
                 );
-
-        if (!alert) {
-            return res.status(404).json({
-                message:
-                    "Alert not found"
-            });
-        }
-
-        /*
-         * Station authorization
-         */
-        if (
-            req.user.role !==
-            "NCPOR Operator"
-        ) {
-            if (
-                !req.user.station ||
-                req.user.station
-                    .trim()
-                    .toUpperCase() !==
-                alert.station.code
-                    .trim()
-                    .toUpperCase()
-            ) {
-                return res.status(403).json({
-                    message:
-                        "You do not have access to this alert"
-                });
             }
-        }
-
-        return res.status(200).json({
-            message:
-                "Alert fetched successfully",
-
-            alert
-        });
-
-    } catch (error) {
-        console.error(
-            "Get alert by ID error:",
-            error
-        );
-
-        return res.status(500).json({
-            message:
-                "Failed to fetch alert",
-            error:
-                error.message
-        });
-    }
-};
-
-
-/*
- * Resolve alert
- */
-const resolveAlert = async (
-    req,
-    res
-) => {
-    try {
-        const {
-            id
-        } = req.params;
-
-        const alert =
-            await Alert.findById(id);
-
-        if (!alert) {
-            return res.status(404).json({
-                message:
-                    "Alert not found"
-            });
-        }
-
-        /*
-         * Station authorization
-         */
-        if (
-            req.user.role !==
-            "NCPOR Operator"
-        ) {
-            if (
-                !req.user.station
-            ) {
-                return res.status(403).json({
-                    message:
-                        "User is not assigned to any station"
-                });
-            }
-
-            /*
-             * Fetch station through alert
-             */
-            const populatedStation =
-                await Alert.findById(
-                    alert._id
-                ).populate(
-                    "station",
-                    "name code"
-                );
 
             if (
-                !populatedStation.station ||
-                req.user.station
-                    .trim()
-                    .toUpperCase() !==
-                populatedStation.station.code
-                    .trim()
-                    .toUpperCase()
+                !canAccessStation(
+                    req.user,
+                    stationId
+                )
             ) {
-                return res.status(403).json({
-                    message:
-                        "You do not have access to this alert"
-                });
+                throw createError(
+                    403,
+                    "You do not have access to this station"
+                );
             }
-        }
 
-        /*
-         * Check if already resolved
-         */
-        if (alert.isResolved) {
-            return res.status(400).json({
+            if (!data.station_health) {
+                throw createError(
+                    400,
+                    "station_health is required"
+                );
+            }
+
+            const masterAlert =
+                await MasterAlert.create({
+                    ...data,
+                    station_id:
+                        stationId
+                });
+
+            return res.status(201).json({
                 message:
-                    "Alert is already resolved"
+                    "Master alert snapshot created successfully",
+                masterAlert
+            });
+        } catch (error) {
+            console.error(
+                "Create master alert error:",
+                error
+            );
+
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                message:
+                    error.message ||
+                    "Failed to create master alert snapshot"
             });
         }
+    };
 
-        /*
-         * Resolve alert
-         */
-        alert.isResolved =
-            true;
+const getLatestMasterAlert =
+    async (req, res) => {
+        try {
+            const requestedStation =
+                req.query.station_id;
 
-        alert.resolvedAt =
-            new Date();
+            let filter = {};
 
-        await alert.save();
+            if (requestedStation) {
+                const stationId =
+                    requestedStation
+                        .trim()
+                        .toUpperCase();
 
-        /*
-         * Populate resolved alert
-         */
-        const populatedAlert =
-            await Alert.findById(
-                alert._id
-            )
-                .populate(
-                    "vehicle",
-                    "vehicleNumber type status"
+                if (
+                    !canAccessStation(
+                        req.user,
+                        stationId
+                    )
+                ) {
+                    throw createError(
+                        403,
+                        "You do not have access to this station"
+                    );
+                }
+
+                filter.station_id =
+                    stationId;
+            } else if (
+                req.user.role !==
+                "NCPOR Operator"
+            ) {
+                if (!req.user.station) {
+                    throw createError(
+                        403,
+                        "User is not assigned to any station"
+                    );
+                }
+
+                filter.station_id =
+                    req.user.station
+                        .trim()
+                        .toUpperCase();
+            }
+
+            const masterAlert =
+                await MasterAlert.findOne(
+                    filter
+                ).sort({
+                    timestamp: -1
+                });
+
+            if (!masterAlert) {
+                throw createError(
+                    404,
+                    "Master alert data not found"
+                );
+            }
+
+            return res.status(200).json({
+                message:
+                    "Latest master alert data fetched successfully",
+                masterAlert
+            });
+        } catch (error) {
+            console.error(
+                "Get latest master alert error:",
+                error
+            );
+
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                message:
+                    error.message ||
+                    "Failed to fetch master alert data"
+            });
+        }
+    };
+
+const getMasterAlertHistory =
+    async (req, res) => {
+        try {
+            const requestedStation =
+                req.query.station_id;
+
+            const filter = {};
+
+            if (requestedStation) {
+                const stationId =
+                    requestedStation
+                        .trim()
+                        .toUpperCase();
+
+                if (
+                    !canAccessStation(
+                        req.user,
+                        stationId
+                    )
+                ) {
+                    throw createError(
+                        403,
+                        "You do not have access to this station"
+                    );
+                }
+
+                filter.station_id =
+                    stationId;
+            } else if (
+                req.user.role !==
+                "NCPOR Operator"
+            ) {
+                if (!req.user.station) {
+                    throw createError(
+                        403,
+                        "User is not assigned to any station"
+                    );
+                }
+
+                filter.station_id =
+                    req.user.station
+                        .trim()
+                        .toUpperCase();
+            }
+
+            let limit =
+                Number(
+                    req.query.limit
+                ) || 100;
+
+            limit = Math.max(
+                1,
+                Math.min(
+                    limit,
+                    500
                 )
-                .populate(
-                    "geofence",
-                    "name type"
+            );
+
+            const masterAlerts =
+                await MasterAlert.find(
+                    filter
                 )
-                .populate(
-                    "station",
-                    "name code"
+                    .sort({
+                        timestamp: -1
+                    })
+                    .limit(limit);
+
+            return res.status(200).json({
+                message:
+                    "Master alert history fetched successfully",
+
+                count:
+                    masterAlerts.length,
+
+                masterAlerts
+            });
+        } catch (error) {
+            console.error(
+                "Get master alert history error:",
+                error
+            );
+
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                message:
+                    error.message ||
+                    "Failed to fetch master alert history"
+            });
+        }
+    };
+
+const updateMasterAlert =
+    async (req, res) => {
+        try {
+            const {
+                id
+            } = req.params;
+
+            const masterAlert =
+                await MasterAlert.findById(
+                    id
                 );
 
-        /*
-         * Emit real-time resolution
-         */
-        emitAlertResolved(
-            populatedAlert.station.code,
-            populatedAlert
-        );
+            if (!masterAlert) {
+                throw createError(
+                    404,
+                    "Master alert snapshot not found"
+                );
+            }
 
-        return res.status(200).json({
-            message:
-                "Alert resolved successfully",
+            if (
+                !canAccessStation(
+                    req.user,
+                    masterAlert.station_id
+                )
+            ) {
+                throw createError(
+                    403,
+                    "You do not have access to this station"
+                );
+            }
 
-            alert:
-                populatedAlert
-        });
+            const allowedFields = [
+                "timestamp",
+                "station_health",
+                "active_alerts",
+                "emergency_scenarios",
+                "interconnected_recommendations",
+                "decision_support_dashboard"
+            ];
 
-    } catch (error) {
-        console.error(
-            "Resolve alert error:",
-            error
-        );
+            let updated = false;
 
-        return res.status(500).json({
-            message:
-                "Failed to resolve alert",
-            error:
-                error.message
-        });
-    }
-};
+            for (
+                const field of allowedFields
+            ) {
+                if (
+                    req.body[field] !==
+                    undefined
+                ) {
+                    masterAlert[field] =
+                        req.body[field];
 
+                    updated = true;
+                }
+            }
+
+            if (!updated) {
+                throw createError(
+                    400,
+                    "No valid fields provided for update"
+                );
+            }
+
+            await masterAlert.save();
+
+            return res.status(200).json({
+                message:
+                    "Master alert snapshot updated successfully",
+
+                masterAlert
+            });
+        } catch (error) {
+            console.error(
+                "Update master alert error:",
+                error
+            );
+
+            return res.status(
+                error.statusCode || 500
+            ).json({
+                message:
+                    error.message ||
+                    "Failed to update master alert snapshot"
+            });
+        }
+    };
 
 export {
-    getAllAlerts,
-    getActiveAlerts,
-    getAlertById,
-    resolveAlert
+    createMasterAlert,
+    getLatestMasterAlert,
+    getMasterAlertHistory,
+    updateMasterAlert
 };

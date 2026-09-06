@@ -44,10 +44,6 @@ app.use(
     alertRoutes
 );
 
-app.use(
-    "/api/v1/cargos",
-    cargoRoutes
-);
 
 app.use(
     "/api/v1/requirements",

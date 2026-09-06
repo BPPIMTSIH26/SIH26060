@@ -154,10 +154,6 @@ logisticsSchema.index({
     requirement: 1
 });
 
-logisticsSchema.index({
-    shipmentNumber: 1
-});
-
 const Logistics = model(
     "Logistics",
     logisticsSchema

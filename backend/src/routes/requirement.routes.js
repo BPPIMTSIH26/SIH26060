@@ -13,12 +13,9 @@ import {
     authorizeRoles
 } from "../middlewares/auth.middleware.js";
 
-const router =
-    express.Router();
+const router = express.Router();
 
-router.use(
-    verifyJwt
-);
+router.use(verifyJwt);
 
 router.get(
     "/",

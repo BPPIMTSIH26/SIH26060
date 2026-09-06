@@ -1,382 +1,344 @@
-import MasterAlert from "../models/masterAlertModel.js";
+import { Schema, model } from "mongoose";
 
-const createError = (
-    statusCode,
-    message
-) => {
-    const error = new Error(message);
+const masterAlertSchema = new Schema(
+    {
+        station_id: {
+            type: String,
+            required: [true, "Station ID is required"],
+            trim: true
+        },
 
-    error.statusCode =
-        statusCode;
+        timestamp: {
+            type: Date,
+            required: [true, "Timestamp is required"],
+            default: Date.now
+        },
 
-    return error;
-};
+        station_health: {
+            overall_health_score: {
+                type: Number,
+                min: 0,
+                max: 100,
+                default: 100
+            },
 
-const canAccessStation = (
-    user,
-    stationId
-) => {
-    if (
-        user.role ===
-        "NCPOR Operator"
-    ) {
-        return true;
+            health_score_trend: {
+                type: String,
+                enum: [
+                    "improving",
+                    "deteriorating",
+                    "stable"
+                ],
+                default: "stable"
+            },
+
+            operational_status: {
+                type: String,
+                enum: [
+                    "GREEN",
+                    "YELLOW",
+                    "RED"
+                ],
+                default: "GREEN"
+            },
+
+            operational_status_values: {
+                type: [String],
+                default: [
+                    "GREEN",
+                    "YELLOW",
+                    "RED"
+                ]
+            },
+
+            health_breakdown: {
+                infrastructure_score: {
+                    type: Number,
+                    min: 0,
+                    max: 100,
+                    default: 100
+                },
+
+                energy_score: {
+                    type: Number,
+                    min: 0,
+                    max: 100,
+                    default: 100
+                },
+
+                environment_score: {
+                    type: Number,
+                    min: 0,
+                    max: 100,
+                    default: 100
+                },
+
+                logistics_score: {
+                    type: Number,
+                    min: 0,
+                    max: 100,
+                    default: 100
+                },
+
+                average_score: {
+                    type: Number,
+                    min: 0,
+                    max: 100,
+                    default: 100
+                }
+            }
+        },
+
+        active_alerts: [
+            {
+                alert_id: {
+                    type: String,
+                    required: true,
+                    trim: true
+                },
+
+                timestamp: {
+                    type: Date,
+                    default: Date.now
+                },
+
+                severity: {
+                    type: String,
+                    enum: [
+                        "INFO",
+                        "WARNING",
+                        "CRITICAL"
+                    ],
+                    required: true
+                },
+
+                severity_levels: {
+                    type: [String],
+                    default: [
+                        "INFO",
+                        "WARNING",
+                        "CRITICAL"
+                    ]
+                },
+
+                severity_color: {
+                    type: String,
+                    default: "yellow"
+                },
+
+                trigger: {
+                    type: String,
+                    required: true,
+                    trim: true
+                },
+
+                alert_message: {
+                    type: String,
+                    required: true,
+                    trim: true
+                },
+
+                affected_systems: {
+                    type: [String],
+                    default: []
+                },
+
+                current_state: {
+                    type: Schema.Types.Mixed,
+                    default: {}
+                },
+
+                recommended_actions: [
+                    {
+                        priority: {
+                            type: Number,
+                            min: 1
+                        },
+
+                        action: {
+                            type: String,
+                            trim: true
+                        },
+
+                        description: {
+                            type: String,
+                            trim: true
+                        }
+                    }
+                ],
+
+                escalation: {
+                    escalates_to_critical_if: {
+                        type: String,
+                        trim: true,
+                        default: ""
+                    },
+
+                    time_until_escalation: {
+                        type: String,
+                        trim: true,
+                        default: ""
+                    }
+                }
+            }
+        ],
+
+        emergency_scenarios: [
+            {
+                scenario_id: {
+                    type: String,
+                    trim: true
+                },
+
+                scenario_name: {
+                    type: String,
+                    trim: true
+                },
+
+                likelihood_percent: {
+                    type: Number,
+                    min: 0,
+                    max: 100
+                },
+
+                trigger_conditions: {
+                    type: Schema.Types.Mixed,
+                    default: {}
+                },
+
+                current_trigger_status: {
+                    type: Boolean,
+                    default: false
+                },
+
+                current_status: {
+                    type: String,
+                    trim: true,
+                    default: ""
+                },
+
+                current_wind: {
+                    type: Number,
+                    default: null
+                },
+
+                current_visibility: {
+                    type: Number,
+                    default: null
+                },
+
+                projected_impact: {
+                    type: Schema.Types.Mixed,
+                    default: {}
+                },
+
+                recommended_prep_actions: {
+                    type: [String],
+                    default: []
+                },
+
+                trigger_condition: {
+                    type: String,
+                    trim: true,
+                    default: ""
+                },
+
+                mitigation: {
+                    type: String,
+                    trim: true,
+                    default: ""
+                }
+            }
+        ],
+
+        interconnected_recommendations: {
+            immediate_action: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+
+            secondary_action: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+
+            monitoring: {
+                type: String,
+                trim: true,
+                default: ""
+            }
+        },
+
+        decision_support_dashboard: {
+            key_metrics: {
+                fuel_days_remaining: {
+                    type: Number,
+                    min: 0,
+                    default: 0
+                },
+
+                battery_hours_remaining: {
+                    type: Number,
+                    min: 0,
+                    default: 0
+                },
+
+                food_days_remaining: {
+                    type: Number,
+                    min: 0,
+                    default: 0
+                },
+
+                power_deficit_kw: {
+                    type: Number,
+                    default: 0
+                }
+            },
+
+            confidence_levels: {
+                data_accuracy_percent: {
+                    type: Number,
+                    min: 0,
+                    max: 100,
+                    default: 0
+                },
+
+                model_reliability_percent: {
+                    type: Number,
+                    min: 0,
+                    max: 100,
+                    default: 0
+                },
+
+                recommendation_confidence_percent: {
+                    type: Number,
+                    min: 0,
+                    max: 100,
+                    default: 0
+                }
+            }
+        }
+    },
+    {
+        timestamps: true
     }
+);
 
-    if (!user.station) {
-        return false;
-    }
+masterAlertSchema.index({
+    station_id: 1,
+    timestamp: -1
+});
 
-    return (
-        user.station
-            .trim()
-            .toUpperCase() ===
-        stationId
-            .trim()
-            .toUpperCase()
-    );
-};
+masterAlertSchema.index({
+    station_id: 1,
+    "station_health.operational_status": 1
+});
 
+const MasterAlert = model(
+    "MasterAlert",
+    masterAlertSchema
+);
 
-const createMasterAlert =
-    async (req, res) => {
-        try {
-            const data =
-                req.body || {};
-
-            const stationId =
-                data.station_id
-                    ?.trim()
-                    .toUpperCase();
-
-            if (!stationId) {
-                throw createError(
-                    400,
-                    "station_id is required"
-                );
-            }
-
-            if (
-                !canAccessStation(
-                    req.user,
-                    stationId
-                )
-            ) {
-                throw createError(
-                    403,
-                    "You do not have access to this station"
-                );
-            }
-
-            if (
-                !data.station_health
-            ) {
-                throw createError(
-                    400,
-                    "station_health is required"
-                );
-            }
-
-            const masterAlert =
-                await MasterAlert.create({
-                    ...data,
-                    station_id:
-                        stationId
-                });
-
-            return res.status(201).json({
-                message:
-                    "Master alert snapshot created successfully",
-
-                masterAlert
-            });
-        } catch (error) {
-            console.error(
-                "Create master alert error:",
-                error
-            );
-
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to create master alert snapshot"
-            });
-        }
-    };
-
-
-const getLatestMasterAlert =
-    async (req, res) => {
-        try {
-            const requestedStation =
-                req.query.station_id;
-
-            let filter = {};
-
-            if (
-                requestedStation
-            ) {
-                const stationId =
-                    requestedStation
-                        .trim()
-                        .toUpperCase();
-
-                if (
-                    !canAccessStation(
-                        req.user,
-                        stationId
-                    )
-                ) {
-                    throw createError(
-                        403,
-                        "You do not have access to this station"
-                    );
-                }
-
-                filter.station_id =
-                    stationId;
-            } else if (
-                req.user.role !==
-                "NCPOR Operator"
-            ) {
-                if (!req.user.station) {
-                    throw createError(
-                        403,
-                        "User is not assigned to any station"
-                    );
-                }
-
-                filter.station_id =
-                    req.user.station
-                        .trim()
-                        .toUpperCase();
-            }
-
-            const masterAlert =
-                await MasterAlert.findOne(
-                    filter
-                ).sort({
-                    timestamp: -1
-                });
-
-            if (!masterAlert) {
-                throw createError(
-                    404,
-                    "Master alert data not found"
-                );
-            }
-
-            return res.status(200).json({
-                message:
-                    "Latest master alert data fetched successfully",
-
-                masterAlert
-            });
-        } catch (error) {
-            console.error(
-                "Get latest master alert error:",
-                error
-            );
-
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to fetch master alert data"
-            });
-        }
-    };
-
-
-const getMasterAlertHistory =
-    async (req, res) => {
-        try {
-            const requestedStation =
-                req.query.station_id;
-
-            const filter = {};
-
-            if (
-                requestedStation
-            ) {
-                const stationId =
-                    requestedStation
-                        .trim()
-                        .toUpperCase();
-
-                if (
-                    !canAccessStation(
-                        req.user,
-                        stationId
-                    )
-                ) {
-                    throw createError(
-                        403,
-                        "You do not have access to this station"
-                    );
-                }
-
-                filter.station_id =
-                    stationId;
-            } else if (
-                req.user.role !==
-                "NCPOR Operator"
-            ) {
-                if (!req.user.station) {
-                    throw createError(
-                        403,
-                        "User is not assigned to any station"
-                    );
-                }
-
-                filter.station_id =
-                    req.user.station
-                        .trim()
-                        .toUpperCase();
-            }
-
-            let limit =
-                Number(
-                    req.query.limit
-                ) || 100;
-
-            if (limit < 1) {
-                limit = 1;
-            }
-
-            if (limit > 500) {
-                limit = 500;
-            }
-
-            const masterAlerts =
-                await MasterAlert.find(
-                    filter
-                )
-                    .sort({
-                        timestamp: -1
-                    })
-                    .limit(limit);
-
-            return res.status(200).json({
-                message:
-                    "Master alert history fetched successfully",
-
-                count:
-                    masterAlerts.length,
-
-                masterAlerts
-            });
-        } catch (error) {
-            console.error(
-                "Get master alert history error:",
-                error
-            );
-
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to fetch master alert history"
-            });
-        }
-    };
-
-
-const updateMasterAlert =
-    async (req, res) => {
-        try {
-            const {
-                id
-            } = req.params;
-
-            const masterAlert =
-                await MasterAlert.findById(
-                    id
-                );
-
-            if (!masterAlert) {
-                throw createError(
-                    404,
-                    "Master alert snapshot not found"
-                );
-            }
-
-            if (
-                !canAccessStation(
-                    req.user,
-                    masterAlert.station_id
-                )
-            ) {
-                throw createError(
-                    403,
-                    "You do not have access to this station"
-                );
-            }
-
-            const allowedFields = [
-                "timestamp",
-                "station_health",
-                "active_alerts",
-                "emergency_scenarios",
-                "interconnected_recommendations",
-                "decision_support_dashboard"
-            ];
-
-            let updated = false;
-
-            for (
-                const field of allowedFields
-            ) {
-                if (
-                    req.body[field] !==
-                    undefined
-                ) {
-                    masterAlert[field] =
-                        req.body[field];
-
-                    updated = true;
-                }
-            }
-
-            if (!updated) {
-                throw createError(
-                    400,
-                    "No valid fields provided for update"
-                );
-            }
-
-            await masterAlert.save();
-
-            return res.status(200).json({
-                message:
-                    "Master alert snapshot updated successfully",
-
-                masterAlert
-            });
-        } catch (error) {
-            console.error(
-                "Update master alert error:",
-                error
-            );
-
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to update master alert snapshot"
-            });
-        }
-    };
-
-
-export {
-    createMasterAlert,
-    getLatestMasterAlert,
-    getMasterAlertHistory,
-    updateMasterAlert
-};
+export default MasterAlert;
