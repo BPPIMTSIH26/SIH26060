@@ -1,64 +1,73 @@
 import Environment from "../models/environmentModel.js";
 import Energy from "../models/energyModel.js";
 import Infrastructure from "../models/infrastructureModel.js";
-
 import Station from "../models/stationModel.js";
+import { saveMasterAlertSnapshot } from "./masterAlert.service.js";
 
-import {
-    saveMasterAlertSnapshot
-} from "./masterAlert.service.js";
-
-let simulationInterval = null;
+/* ============================================================
+   SIMULATION CONFIG
+   ============================================================ */
 
 const TICK_RATE_SEC = 2;
 
+/*
+ * IMPORTANT:
+ * One interval per station.
+ *
+ * Example:
+ * {
+ *   MAITRI: Timeout,
+ *   BHARATI: Timeout
+ * }
+ */
+const simulationIntervals = {};
+
+/*
+ * In-memory state for every simulated station.
+ *
+ * Example:
+ * {
+ *   MAITRI: {...},
+ *   BHARATI: {...}
+ * }
+ */
 const simulationState = {};
 
-const randomBetween = (
-    min,
-    max
-) => {
-    return Math.random() *
-        (max - min) +
-        min;
+/* ============================================================
+   HELPERS
+   ============================================================ */
+
+const randomBetween = (min, max) => {
+    return Math.random() * (max - min) + min;
 };
 
-const round = (
-    value,
-    decimals = 2
-) => {
-    const factor =
-        10 ** decimals;
+const round = (value, decimals = 2) => {
+    const factor = 10 ** decimals;
 
-    return Math.round(
-        value * factor
-    ) / factor;
+    return Math.round(value * factor) / factor;
 };
 
-const clamp = (
-    value,
-    min,
-    max
-) => {
+const clamp = (value, min, max) => {
     return Math.min(
         Math.max(value, min),
         max
     );
 };
 
-const getInitialState = (
-    stationId
-) => {
+/* ============================================================
+   INITIAL SIMULATION STATE
+   ============================================================ */
+
+const getInitialState = (stationId) => {
     return {
-        station_id:
-            stationId,
+        station_id: stationId,
 
         environment: {
             temperature_c: -35.2,
             wind_speed_kmh: 42.5,
             wind_gust_kmh: 68.3,
             visibility_meters: 3200,
-            blizzard_active: false
+            blizzard_active: false,
         },
 
         energy: {
@@ -70,84 +79,59 @@ const getInitialState = (
             gen2_output_kw: 0,
 
             fuel_liters: 38250,
-
             battery_kwh: 138,
-
             load_kw: 245.5,
-
-            solar_output_kw: 60
+            solar_output_kw: 60,
         },
 
         infrastructure: {
             hvac_status: "nominal",
-
-            living_quarters_temperature_c:
-                18.5,
-
-            main_lab_temperature_c:
-                19.2,
-
-            storage_temperature_c:
-                -5,
-
-            snow_load_kg:
-                15000
-        }
+            living_quarters_temperature_c: 18.5,
+            main_lab_temperature_c: 19.2,
+            storage_temperature_c: -5,
+            snow_load_kg: 15000,
+        },
     };
 };
 
-const getSimulationState = (
-    stationId
-) => {
-    const normalized =
-        stationId
-            .trim()
-            .toUpperCase();
+/* ============================================================
+   GET / CREATE STATE
+   ============================================================ */
 
-    if (
-        !simulationState[
-            normalized
-        ]
-    ) {
-        simulationState[
-            normalized
-        ] = getInitialState(
-            normalized
-        );
+const getSimulationState = (stationId) => {
+    const normalized = stationId
+        .trim()
+        .toUpperCase();
+
+    if (!simulationState[normalized]) {
+        simulationState[normalized] =
+            getInitialState(normalized);
     }
 
-    return simulationState[
-        normalized
-    ];
+    return simulationState[normalized];
 };
+
+/* ============================================================
+   ENVIRONMENT SIMULATION
+   ============================================================ */
 
 const calculateVisibility = (
     windSpeed,
     currentVisibility
 ) => {
-    if (
-        windSpeed > 100
-    ) {
+    if (windSpeed > 100) {
         return clamp(
             currentVisibility -
-                randomBetween(
-                    150,
-                    300
-                ),
+                randomBetween(150, 300),
             100,
             5000
         );
     }
 
-    if (
-        windSpeed > 80
-    ) {
+    if (windSpeed > 80) {
         return clamp(
             currentVisibility -
-                randomBetween(
-                    75,
-                    175
-                ),
+                randomBetween(75, 175),
             100,
             5000
         );
@@ -155,104 +139,71 @@ const calculateVisibility = (
 
     return clamp(
         currentVisibility +
-            randomBetween(
-                20,
-                80
-            ),
+            randomBetween(20, 80),
         100,
         5000
     );
 };
 
-const simulateEnvironment = (
-    state
-) => {
+const simulateEnvironment = (state) => {
     const windChange =
-        randomBetween(
-            -3,
-            3
-        );
+        randomBetween(-3, 3);
 
-    state.environment
-        .wind_speed_kmh =
+    state.environment.wind_speed_kmh =
         clamp(
-            state.environment
-                .wind_speed_kmh +
+            state.environment.wind_speed_kmh +
                 windChange,
             5,
             130
         );
 
-    state.environment
-        .wind_gust_kmh =
+    state.environment.wind_gust_kmh =
         clamp(
-            state.environment
-                .wind_speed_kmh +
-                randomBetween(
-                    10,
-                    25
-                ),
+            state.environment.wind_speed_kmh +
+                randomBetween(10, 25),
             5,
             150
         );
 
     let temperatureChange =
-        randomBetween(
-            -0.2,
-            0.2
-        );
+        randomBetween(-0.2, 0.2);
 
     if (
-        state.environment
-            .wind_speed_kmh >
-        80
+        state.environment.wind_speed_kmh > 80
     ) {
-        temperatureChange -=
-            0.05;
+        temperatureChange -= 0.05;
     }
 
-    state.environment
-        .temperature_c =
+    state.environment.temperature_c =
         round(
-            state.environment
-                .temperature_c +
+            state.environment.temperature_c +
                 temperatureChange,
             2
         );
 
-    state.environment
-        .visibility_meters =
+    state.environment.visibility_meters =
         Math.round(
             calculateVisibility(
-                state.environment
-                    .wind_speed_kmh,
-                state.environment
-                    .visibility_meters
+                state.environment.wind_speed_kmh,
+                state.environment.visibility_meters
             )
         );
 
-    state.environment
-        .blizzard_active =
-        state.environment
-            .wind_speed_kmh >
-            100 &&
-        state.environment
-            .visibility_meters <
-            500;
+    state.environment.blizzard_active =
+        state.environment.wind_speed_kmh > 100 &&
+        state.environment.visibility_meters < 500;
 };
 
-const simulateEnergy = (
-    state
-) => {
+/* ============================================================
+   ENERGY SIMULATION
+   ============================================================ */
+
+const simulateEnergy = (state) => {
     state.energy.load_kw =
         round(
             clamp(
-                state.energy
-                    .load_kw +
-                    randomBetween(
-                        -5,
-                        5
-                    ),
+                state.energy.load_kw +
+                    randomBetween(-5, 5),
                 150,
                 400
             ),
@@ -260,126 +211,103 @@ const simulateEnergy = (
         );
 
     if (
-        state.environment
-            .temperature_c <
-        -40
+        state.environment.temperature_c < -40
     ) {
         state.energy.load_kw =
             round(
-                state.energy.load_kw +
-                    5,
+                state.energy.load_kw + 5,
                 2
             );
     }
 
     const totalGeneration =
-        state.energy
-            .gen1_output_kw +
-        state.energy
-            .gen2_output_kw +
-        state.energy
-            .solar_output_kw;
+        state.energy.gen1_output_kw +
+        state.energy.gen2_output_kw +
+        state.energy.solar_output_kw;
 
     const deficit =
         totalGeneration -
         state.energy.load_kw;
 
-    if (
-        deficit < 0
-    ) {
+    /*
+     * Battery drains when generation
+     * is lower than load.
+     */
+    if (deficit < 0) {
         const drain =
-            Math.abs(
-                deficit
-            ) *
-            (
-                TICK_RATE_SEC /
-                3600
-            );
+            Math.abs(deficit) *
+            (TICK_RATE_SEC / 3600);
 
-        state.energy
-            .battery_kwh =
+        state.energy.battery_kwh =
             clamp(
-                state.energy
-                    .battery_kwh -
-                    drain,
+                state.energy.battery_kwh - drain,
                 0,
                 150
             );
     }
 
+    /*
+     * Fuel consumption
+     */
     const fuelBurn =
-        (
-            state.energy
-                .gen1_status ===
-            "ACTIVE"
-                ? state.energy
-                    .gen1_fuel_consumption_lph
-                : 0
-        ) *
-        (
-            TICK_RATE_SEC /
-            3600
-        );
+        state.energy.gen1_status === "ACTIVE"
+            ? state.energy.gen1_fuel_consumption_lph
+            : 0;
 
-    state.energy
-        .fuel_liters =
+    const fuelConsumed =
+        fuelBurn *
+        (TICK_RATE_SEC / 3600);
+
+    state.energy.fuel_liters =
         clamp(
-            state.energy
-                .fuel_liters -
-                fuelBurn,
+            state.energy.fuel_liters -
+                fuelConsumed,
             0,
             50000
         );
 
+    /*
+     * Generator 1 fails at critical fuel.
+     */
     if (
-        state.energy
-            .fuel_liters <=
-        5000
+        state.energy.fuel_liters <= 5000
     ) {
-        state.energy.gen1_status =
-            "FAULT";
+        state.energy.gen1_status = "FAULT";
+        state.energy.gen1_output_kw = 0;
 
-        state.energy.gen1_output_kw =
-            0;
-
-        state.energy.gen2_status =
-            "ACTIVE";
-
-        state.energy.gen2_output_kw =
-            185;
+        state.energy.gen2_status = "ACTIVE";
+        state.energy.gen2_output_kw = 185;
     }
 
+    /*
+     * Automatically activate Generator 2
+     * when battery is critically low.
+     */
     if (
-        state.energy
-            .battery_kwh <=
-        20 &&
-        state.energy
-            .gen2_status ===
-            "STANDBY"
+        state.energy.battery_kwh <= 20 &&
+        state.energy.gen2_status === "STANDBY"
     ) {
-        state.energy.gen2_status =
-            "ACTIVE";
-
-        state.energy.gen2_output_kw =
-            185;
+        state.energy.gen2_status = "ACTIVE";
+        state.energy.gen2_output_kw = 185;
     }
 
+    /*
+     * Keep Gen-1 output at zero after fault.
+     */
     if (
-        state.energy
-            .gen1_status ===
-        "FAULT"
+        state.energy.gen1_status === "FAULT"
     ) {
-        state.energy.gen1_output_kw =
-            0;
+        state.energy.gen1_output_kw = 0;
     }
 };
 
-const simulateInfrastructure = (
-    state
-) => {
+/* ============================================================
+   INFRASTRUCTURE SIMULATION
+   ============================================================ */
+
+const simulateInfrastructure = (state) => {
     const hvacFault =
-        state.infrastructure
-            .hvac_status ===
+        state.infrastructure.hvac_status ===
         "fault";
 
     if (hvacFault) {
@@ -406,10 +334,7 @@ const simulateInfrastructure = (
             round(
                 state.infrastructure
                     .living_quarters_temperature_c +
-                    randomBetween(
-                        -0.05,
-                        0.05
-                    ),
+                    randomBetween(-0.05, 0.05),
                 2
             );
 
@@ -418,409 +343,428 @@ const simulateInfrastructure = (
             round(
                 state.infrastructure
                     .main_lab_temperature_c +
-                    randomBetween(
-                        -0.05,
-                        0.05
-                    ),
+                    randomBetween(-0.05, 0.05),
                 2
             );
     }
 
     if (
-        state.environment
-            .blizzard_active
+        state.environment.blizzard_active
     ) {
-        state.infrastructure
-            .snow_load_kg +=
-            15;
+        state.infrastructure.snow_load_kg += 15;
     }
 
-    if (
-        state.infrastructure
-            .snow_load_kg >=
-        25000
-    ) {
-        state.infrastructure
-            .snow_load_kg = 25000;
-    }
+    state.infrastructure.snow_load_kg =
+        clamp(
+            state.infrastructure.snow_load_kg,
+            0,
+            25000
+        );
 };
 
-const calculateEnvironmentHealth =
-    (state) => {
-        let score = 100;
+/* ============================================================
+   ENVIRONMENT HEALTH
+   ============================================================ */
 
-        if (
-            state.environment
-                .temperature_c <=
-            -50
-        ) {
-            score -= 35;
-        } else if (
-            state.environment
-                .temperature_c <=
-            -40
-        ) {
-            score -= 20;
-        } else if (
-            state.environment
-                .temperature_c <=
-            -35
-        ) {
-            score -= 10;
-        }
+const calculateEnvironmentHealth = (state) => {
+    let score = 100;
 
-        if (
-            state.environment
-                .wind_speed_kmh >=
-            100
-        ) {
-            score -= 35;
-        } else if (
-            state.environment
-                .wind_speed_kmh >=
-            75
-        ) {
-            score -= 20;
-        }
+    const temperature =
+        state.environment.temperature_c;
 
-        if (
-            state.environment
-                .visibility_meters <=
-            500
-        ) {
-            score -= 35;
-        } else if (
-            state.environment
-                .visibility_meters <=
-            1000
-        ) {
-            score -= 20;
-        }
+    const wind =
+        state.environment.wind_speed_kmh;
 
-        return clamp(
-            score,
-            0,
-            100
-        );
-    };
+    const visibility =
+        state.environment.visibility_meters;
 
-const buildEnvironmentDocument =
-    (state) => {
-        const temperature =
-            state.environment
-                .temperature_c;
+    if (temperature <= -50) {
+        score -= 35;
+    } else if (temperature <= -40) {
+        score -= 20;
+    } else if (temperature <= -35) {
+        score -= 10;
+    }
 
-        const wind =
-            state.environment
-                .wind_speed_kmh;
+    if (wind >= 100) {
+        score -= 35;
+    } else if (wind >= 75) {
+        score -= 20;
+    }
 
-        const gust =
-            state.environment
-                .wind_gust_kmh;
+    if (visibility <= 500) {
+        score -= 35;
+    } else if (visibility <= 1000) {
+        score -= 20;
+    }
 
-        const visibility =
-            state.environment
-                .visibility_meters;
+    return clamp(
+        score,
+        0,
+        100
+    );
+};
 
-        return {
-            station_id:
-                state.station_id,
+/* ============================================================
+   BUILD ENVIRONMENT DOCUMENT
+   ============================================================ */
 
-            timestamp:
-                new Date(),
+const buildEnvironmentDocument = (
+    state,
+    station
+) => {
+    const temperature =
+        state.environment.temperature_c;
 
-            polling_interval_seconds:
-                TICK_RATE_SEC,
+    const wind =
+        state.environment.wind_speed_kmh;
 
-            exteriorConditions: {
-                temperature: {
-                    outsideTemperatureC:
-                        temperature,
+    const gust =
+        state.environment.wind_gust_kmh;
 
-                    temperatureTrend:
-                        temperature <
-                        -35
-                            ? "decreasing"
-                            : "stable",
+    const visibility =
+        state.environment.visibility_meters;
 
-                    temperatureRateOfChangeCPerHour:
-                        -0.5,
+    return {
+        station: station._id,
 
-                    thresholds: {
-                        extremeColdC:
-                            -50,
+        timestamp: new Date(),
 
-                        severeColdC:
-                            -40,
+        pollingIntervalSeconds:
+            TICK_RATE_SEC,
 
-                        warningColdC:
-                            -35
-                    },
+        exteriorConditions: {
+            temperature: {
+                outsideTemperatureC:
+                    temperature,
 
-                    alerts: {
-                        isExtremeCold:
-                            temperature <=
-                            -50,
+                temperatureTrend:
+                    temperature < -35
+                        ? "decreasing"
+                        : "stable",
 
-                        isSevereCold:
-                            temperature <=
-                            -40,
+                temperatureRateOfChangeCPerHour:
+                    -0.5,
 
-                        isWarningCold:
-                            temperature <=
-                            -35
-                    }
+                thresholds: {
+                    extremeColdC: -50,
+                    severeColdC: -40,
+                    warningColdC: -35,
                 },
 
-                wind: {
-                    windSpeedKmh:
-                        round(
-                            wind,
-                            2
-                        ),
+                alerts: {
+                    isExtremeCold:
+                        temperature <= -50,
 
-                    windGustKmh:
-                        round(
-                            gust,
-                            2
-                        ),
+                    isSevereCold:
+                        temperature <= -40,
 
-                    windDirection:
-                        "SSE",
-
-                    windDirectionDegrees:
-                        157,
-
-                    windTrend:
-                        wind > 60
-                            ? "increasing"
-                            : "stable",
-
-                    thresholds: {
-                        blizzardThresholdKmh:
-                            100,
-
-                        severeWindThresholdKmh:
-                            75,
-
-                        warningWindThresholdKmh:
-                            60
-                    },
-
-                    alerts: {
-                        isBlizzardCondition:
-                            wind >=
-                                100 &&
-                            visibility <
-                                500,
-
-                        isSevereWind:
-                            wind >= 75,
-
-                        isWarningWind:
-                            wind >= 60
-                    }
+                    isWarningCold:
+                        temperature <= -35,
                 },
-
-                visibility: {
-                    visibilityMeters:
-                        visibility,
-
-                    visibilityTrend:
-                        wind > 80
-                            ? "decreasing"
-                            : "improving",
-
-                    thresholds: {
-                        whiteoutMeters:
-                            100,
-
-                        severeVisibilityMeters:
-                            500,
-
-                        poorVisibilityMeters:
-                            1000
-                    },
-
-                    alerts: {
-                        isWhiteout:
-                            visibility <=
-                            100,
-
-                        isSevereVisibilityLow:
-                            visibility <=
-                            500
-                    }
-                }
             },
 
-            weatherPhenomena: {
-                blizzard: {
-                    blizzardWarning:
+            wind: {
+                windSpeedKmh:
+                    round(wind, 2),
+
+                windGustKmh:
+                    round(gust, 2),
+
+                windDirection: "SSE",
+
+                windDirectionDegrees: 157,
+
+                windTrend:
+                    wind > 60
+                        ? "increasing"
+                        : "stable",
+
+                thresholds: {
+                    blizzardThresholdKmh: 100,
+                    severeWindThresholdKmh: 75,
+                    warningWindThresholdKmh: 60,
+                },
+
+                alerts: {
+                    isBlizzardCondition:
+                        wind >= 100 &&
+                        visibility < 500,
+
+                    isSevereWind:
                         wind >= 75,
 
-                    blizzardActive:
-                        state.environment
-                            .blizzard_active,
-
-                    blizzardTriggerConditions: {
-                        windSpeedKmh:
-                            wind,
-
-                        windThreshold:
-                            100,
-
-                        visibilityMeters:
-                            visibility,
-
-                        visibilityThreshold:
-                            500,
-
-                        bothConditionsMet:
-                            wind >=
-                                100 &&
-                            visibility <
-                                500
-                    },
-
-                    estimatedBlizzardDurationHours:
-                        state.environment
-                            .blizzard_active
-                            ? 6
-                            : 0,
-
-                    fieldTeamsAffectedCount:
-                        state.environment
-                            .blizzard_active
-                            ? 12
-                            : 0
+                    isWarningWind:
+                        wind >= 60,
                 },
-
-                precipitation: {
-                    precipitationType:
-                        state.environment
-                            .blizzard_active
-                            ? "heavy_snow"
-                            : "none",
-
-                    precipitationRateMmPerHour:
-                        state.environment
-                            .blizzard_active
-                            ? 5
-                            : 0,
-
-                    snowAccumulationTodayMm:
-                        state.environment
-                            .blizzard_active
-                            ? 50
-                            : 0,
-
-                    totalSnowDepthOnGroundCm:
-                        185
-                },
-
-                atmospheric: {
-                    atmosphericPressureMb:
-                        1013.2,
-
-                    pressureTrend:
-                        "stable",
-
-                    humidityPercent:
-                        68,
-
-                    uvIndex:
-                        4,
-
-                    ozoneLevelDobsonUnits:
-                        280
-                }
             },
 
-            solarConditions: {
-                solarRadiationWM2:
-                    450,
+            visibility: {
+                visibilityMeters:
+                    visibility,
 
-                solarRadiationTrend:
+                visibilityTrend:
+                    wind > 80
+                        ? "decreasing"
+                        : "improving",
+
+                thresholds: {
+                    whiteoutMeters: 100,
+                    severeVisibilityMeters: 500,
+                    poorVisibilityMeters: 1000,
+                },
+
+                alerts: {
+                    isWhiteout:
+                        visibility <= 100,
+
+                    isSevereVisibilityLow:
+                        visibility <= 500,
+                },
+            },
+        },
+
+        weatherPhenomena: {
+            blizzard: {
+                blizzardWarning:
+                    wind >= 75,
+
+                blizzardActive:
+                    state.environment.blizzard_active,
+
+                blizzardTriggerConditions: {
+                    windSpeedKmh: wind,
+                    windThreshold: 100,
+                    visibilityMeters: visibility,
+                    visibilityThreshold: 500,
+
+                    bothConditionsMet:
+                        wind >= 100 &&
+                        visibility < 500,
+                },
+
+                estimatedBlizzardDurationHours:
+                    state.environment.blizzard_active
+                        ? 6
+                        : 0,
+
+                fieldTeamsAffectedCount:
+                    state.environment.blizzard_active
+                        ? 12
+                        : 0,
+            },
+
+            precipitation: {
+                precipitationType:
+                    state.environment.blizzard_active
+                        ? "heavy_snow"
+                        : "none",
+
+                precipitationRateMmPerHour:
+                    state.environment.blizzard_active
+                        ? 5
+                        : 0,
+
+                snowAccumulationTodayMm:
+                    state.environment.blizzard_active
+                        ? 50
+                        : 0,
+
+                totalSnowDepthOnGroundCm:
+                    185,
+            },
+
+            atmospheric: {
+                atmosphericPressureMb:
+                    1013.2,
+
+                pressureTrend:
                     "stable",
 
-                seasonalPhase:
-                    "austral_summer",
+                humidityPercent:
+                    68,
 
-                daylightHours:
-                    18,
+                uvIndex:
+                    4,
 
-                solarPanelEfficiencyPercent:
-                    78
+                ozoneLevelDobsonUnits:
+                    280,
+            },
+        },
+
+        solarConditions: {
+            solarRadiationWM2:
+                450,
+
+            solarRadiationTrend:
+                "stable",
+
+            seasonalPhase:
+                "austral_summer",
+
+            daylightHours:
+                18,
+
+            solarPanelEfficiencyPercent:
+                78,
+        },
+
+        interconnectionsWithOtherSystems: {
+            impactOnEnergy: {
+                windSupportingGeneration:
+                    false,
+
+                solarSupportingGeneration:
+                    false,
+
+                solarOutputContributionKw:
+                    0,
             },
 
-            alertsLocal: [],
+            impactOnOperations: {
+                outdoorOperationsPossible:
+                    !state.environment.blizzard_active,
 
-            systemHealthScore:
-                calculateEnvironmentHealth(
-                    state
-                ),
+                fieldTeamSafetyStatus:
+                    state.environment.blizzard_active
+                        ? "unsafe"
+                        : wind >= 75
+                            ? "caution"
+                            : "safe",
 
-            overallWeatherRisk:
-                state.environment
-                    .blizzard_active
-                    ? "critical"
-                    : wind >= 75
+                recommendations:
+                    state.environment.blizzard_active
+                        ? "Suspend non-essential outdoor operations."
+                        : "Normal outdoor operations.",
+            },
+
+            impactOnInfrastructure: {
+                snowLoadingOnRoof:
+                    state.infrastructure.snow_load_kg >= 25000
+                        ? "critical"
+                        : state.infrastructure.snow_load_kg >= 20000
+                            ? "high"
+                            : state.infrastructure.snow_load_kg >= 10000
+                                ? "moderate"
+                                : "low",
+
+                structuralRisk:
+                    state.infrastructure.snow_load_kg >= 25000
+                        ? "critical"
+                        : state.infrastructure.snow_load_kg >= 20000
+                            ? "high"
+                            : "low",
+
+                heatingDemand:
+                    temperature <= -40
+                        ? "high"
+                        : "moderate",
+            },
+        },
+
+        emergencyScenarios: {
+            scenarioBlizzardLockdown: {
+                likelihood:
+                    wind >= 100
+                        ? "high"
+                        : wind >= 75
+                            ? "medium"
+                            : "low",
+
+                triggerThresholdWind:
+                    100,
+
+                triggerThresholdVisibility:
+                    500,
+
+                currentStatus:
+                    state.environment.blizzard_active
+                        ? "active"
+                        : wind >= 75 ||
+                            visibility <= 1000
+                            ? "warning"
+                            : "not_triggered",
+
+                estimatedEffect:
+                    state.environment.blizzard_active
+                        ? "Outdoor operations suspended and field teams recalled."
+                        : "",
+            },
+
+            scenarioExtremeCold: {
+                likelihood:
+                    temperature <= -50
+                        ? "high"
+                        : temperature <= -40
+                            ? "medium"
+                            : "low",
+
+                triggerThresholdTemp:
+                    -50,
+
+                currentStatus:
+                    temperature <= -50
+                        ? "active"
+                        : temperature <= -40
+                            ? "warning"
+                            : "not_triggered",
+
+                estimatedEffect:
+                    temperature <= -40
+                        ? "Increased heating demand and elevated energy consumption."
+                        : "",
+            },
+        },
+
+        alertsLocal: [],
+
+        systemHealthScore:
+            calculateEnvironmentHealth(state),
+
+        overallWeatherRisk:
+            state.environment.blizzard_active
+                ? "critical"
+                : wind >= 75
                     ? "high"
-                    : temperature <=
-                      -35
-                    ? "medium"
-                    : "low"
-        };
+                    : temperature <= -35
+                        ? "medium"
+                        : "low",
     };
+};
 
-const buildEnergyDocument = (
-    state
-) => {
+/* ============================================================
+   BUILD ENERGY DOCUMENT
+   ============================================================ */
+
+const buildEnergyDocument = (state) => {
     const totalGeneration =
-        state.energy
-            .gen1_output_kw +
-        state.energy
-            .gen2_output_kw +
-        state.energy
-            .solar_output_kw;
+        state.energy.gen1_output_kw +
+        state.energy.gen2_output_kw +
+        state.energy.solar_output_kw;
 
     const deficit =
         totalGeneration -
         state.energy.load_kw;
 
     const fuelPercent =
-        (
-            state.energy
-                .fuel_liters /
-            50000
-        ) *
+        (state.energy.fuel_liters / 50000) *
         100;
 
     const batteryPercent =
-        (
-            state.energy
-                .battery_kwh /
-            150
-        ) *
+        (state.energy.battery_kwh / 150) *
         100;
-
-    const generation =
-        totalGeneration;
 
     const estimatedBackupHours =
         deficit < 0
             ? round(
-                state.energy
-                    .battery_kwh /
-                Math.abs(deficit),
+                state.energy.battery_kwh /
+                    Math.abs(deficit),
                 2
             )
             : 99;
 
     const gen1MaintenanceDue =
-        5000 -
-        4250;
+        5000 - 4250;
 
     return {
         station_id:
@@ -838,8 +782,7 @@ const buildEnergyDocument = (
                     "GEN-001",
 
                 status:
-                    state.energy
-                        .gen1_status,
+                    state.energy.gen1_status,
 
                 status_values: [
                     "ACTIVE",
@@ -847,12 +790,11 @@ const buildEnergyDocument = (
                     "STARTING",
                     "SHUTDOWN",
                     "FAULT",
-                    "MAINTENANCE"
+                    "MAINTENANCE",
                 ],
 
                 status_color:
-                    state.energy
-                        .gen1_status ===
+                    state.energy.gen1_status ===
                     "ACTIVE"
                         ? "green"
                         : "red",
@@ -873,7 +815,7 @@ const buildEnergyDocument = (
                             .gen1_output_kw,
 
                     efficiency_percent:
-                        88
+                        88,
                 },
 
                 thresholds: {
@@ -890,8 +832,8 @@ const buildEnergyDocument = (
                         250,
 
                     overload_threshold_kw:
-                        240
-                }
+                        240,
+                },
             },
 
             gen_2: {
@@ -899,8 +841,7 @@ const buildEnergyDocument = (
                     "GEN-002",
 
                 status:
-                    state.energy
-                        .gen2_status,
+                    state.energy.gen2_status,
 
                 status_values: [
                     "ACTIVE",
@@ -908,12 +849,11 @@ const buildEnergyDocument = (
                     "STARTING",
                     "SHUTDOWN",
                     "FAULT",
-                    "MAINTENANCE"
+                    "MAINTENANCE",
                 ],
 
                 status_color:
-                    state.energy
-                        .gen2_status ===
+                    state.energy.gen2_status ===
                     "ACTIVE"
                         ? "green"
                         : "yellow",
@@ -926,20 +866,17 @@ const buildEnergyDocument = (
                         400,
 
                     fuel_consumption_liters_per_hour:
-                        state.energy
-                            .gen2_status ===
+                        state.energy.gen2_status ===
                         "ACTIVE"
                             ? 85
                             : 0,
 
                     power_output_kw:
-                        state.energy
-                            .gen2_output_kw,
+                        state.energy.gen2_output_kw,
 
                     ready_for_activation:
-                        state.energy
-                            .gen2_status ===
-                        "STANDBY"
+                        state.energy.gen2_status ===
+                        "STANDBY",
                 },
 
                 thresholds: {
@@ -950,9 +887,9 @@ const buildEnergyDocument = (
                         4600,
 
                     power_output_max_kw:
-                        250
-                }
-            }
+                        250,
+                },
+            },
         },
 
         fuel_system: {
@@ -965,8 +902,7 @@ const buildEnergyDocument = (
 
                 current_level_liters:
                     round(
-                        state.energy
-                            .fuel_liters,
+                        state.energy.fuel_liters,
                         2
                     ),
 
@@ -984,9 +920,8 @@ const buildEnergyDocument = (
 
                 days_until_empty:
                     round(
-                        state.energy
-                            .fuel_liters /
-                        2040,
+                        state.energy.fuel_liters /
+                            2040,
                         1
                     ),
 
@@ -1001,8 +936,8 @@ const buildEnergyDocument = (
                         15000,
 
                     warning_low_percent:
-                        30
-                }
+                        30,
+                },
             },
 
             emergency_reserve: {
@@ -1022,14 +957,14 @@ const buildEnergyDocument = (
                     "Emergency power for 48 hours of essential systems",
 
                 auto_lockout_at_percent:
-                    5
-            }
+                    5,
+            },
         },
 
         power_distribution: {
             total_generation_kw:
                 round(
-                    generation,
+                    totalGeneration,
                     2
                 ),
 
@@ -1059,15 +994,13 @@ const buildEnergyDocument = (
                         round(
                             (
                                 85.2 /
-                                state.energy
-                                    .load_kw
-                            ) *
-                            100,
+                                state.energy.load_kw
+                            ) * 100,
                             1
                         ),
 
                     status:
-                        "operational"
+                        "operational",
                 },
 
                 main_lab: {
@@ -1078,15 +1011,13 @@ const buildEnergyDocument = (
                         round(
                             (
                                 95.3 /
-                                state.energy
-                                    .load_kw
-                            ) *
-                            100,
+                                state.energy.load_kw
+                            ) * 100,
                             1
                         ),
 
                     status:
-                        "operational"
+                        "operational",
                 },
 
                 hvac_system: {
@@ -1097,15 +1028,13 @@ const buildEnergyDocument = (
                         round(
                             (
                                 35.5 /
-                                state.energy
-                                    .load_kw
-                            ) *
-                            100,
+                                state.energy.load_kw
+                            ) * 100,
                             1
                         ),
 
                     status:
-                        "operational"
+                        "operational",
                 },
 
                 critical_systems: {
@@ -1116,15 +1045,13 @@ const buildEnergyDocument = (
                         round(
                             (
                                 20 /
-                                state.energy
-                                    .load_kw
-                            ) *
-                            100,
+                                state.energy.load_kw
+                            ) * 100,
                             1
                         ),
 
                     status:
-                        "operational"
+                        "operational",
                 },
 
                 other: {
@@ -1135,16 +1062,14 @@ const buildEnergyDocument = (
                         round(
                             (
                                 9.5 /
-                                state.energy
-                                    .load_kw
-                            ) *
-                            100,
+                                state.energy.load_kw
+                            ) * 100,
                             1
                         ),
 
                     status:
-                        "operational"
-                }
+                        "operational",
+                },
             },
 
             thresholds: {
@@ -1155,8 +1080,8 @@ const buildEnergyDocument = (
                     350,
 
                 deficit_warning_kw:
-                    -50
-            }
+                    -50,
+            },
         },
 
         battery_system: {
@@ -1168,8 +1093,7 @@ const buildEnergyDocument = (
 
             current_charge_kwh:
                 round(
-                    state.energy
-                        .battery_kwh,
+                    state.energy.battery_kwh,
                     2
                 ),
 
@@ -1190,16 +1114,14 @@ const buildEnergyDocument = (
 
                 discharging_rate_kw:
                     deficit < 0
-                        ? Math.abs(
-                            deficit
-                        )
+                        ? Math.abs(deficit)
                         : 0,
 
                 estimated_backup_hours_at_current_load:
                     estimatedBackupHours,
 
                 efficiency_percent:
-                    95
+                    95,
             },
 
             thresholds: {
@@ -1210,8 +1132,8 @@ const buildEnergyDocument = (
                     20,
 
                 max_discharge_rate_kw:
-                    120
-            }
+                    120,
+            },
         },
 
         renewable_energy: {
@@ -1223,15 +1145,14 @@ const buildEnergyDocument = (
                     "operational",
 
                 current_output_kw:
-                    state.energy
-                        .solar_output_kw,
+                    state.energy.solar_output_kw,
 
                 seasonal_phase:
                     "summer_high_output",
 
                 weather_dependent:
-                    true
-            }
+                    true,
+            },
         },
 
         interconnections: {
@@ -1243,11 +1164,10 @@ const buildEnergyDocument = (
             alert_description:
                 deficit < -50
                     ? `Generation (${round(
-                        generation,
+                        totalGeneration,
                         1
                     )} kW) < Load (${round(
-                        state.energy
-                            .load_kw,
+                        state.energy.load_kw,
                         1
                     )} kW). Battery backup active.`
                     : "",
@@ -1261,8 +1181,8 @@ const buildEnergyDocument = (
                 deficit <= -100
                     ? "CRITICAL"
                     : deficit < -50
-                    ? "WARNING"
-                    : "INFO"
+                        ? "WARNING"
+                        : "INFO",
         },
 
         system_health_score:
@@ -1271,13 +1191,11 @@ const buildEnergyDocument = (
                     100 +
                         (
                             deficit < 0
-                                ? deficit /
-                                  4
+                                ? deficit / 4
                                 : 0
                         ) -
                         (
-                            batteryPercent <
-                            20
+                            batteryPercent < 20
                                 ? 25
                                 : 0
                         ),
@@ -1290,488 +1208,582 @@ const buildEnergyDocument = (
         system_health_trend:
             deficit < 0
                 ? "deteriorating"
-                : "stable"
+                : "stable",
     };
 };
 
-const buildInfrastructureDocument =
-    (state) => {
-        const snowLoad =
-            state.infrastructure
-                .snow_load_kg;
+/* ============================================================
+   BUILD INFRASTRUCTURE DOCUMENT
+   ============================================================ */
 
-        const snowCritical =
-            25000;
+const buildInfrastructureDocument = (state) => {
+    const snowLoad =
+        state.infrastructure.snow_load_kg;
 
-        const structuralIntegrity =
-            clamp(
-                100 -
-                    (
-                        snowLoad /
-                        snowCritical
-                    ) *
-                    10,
-                0,
-                100
-            );
+    const snowCritical =
+        25000;
 
-        return {
-            station_id:
-                state.station_id,
+    const structuralIntegrity =
+        clamp(
+            100 -
+                (
+                    snowLoad /
+                    snowCritical
+                ) * 10,
+            0,
+            100
+        );
 
-            station_name:
-                `${state.station_id} Antarctic Research Station`,
+    return {
+        station_id:
+            state.station_id,
 
-            timestamp:
-                new Date(),
+        station_name:
+            `${state.station_id} Antarctic Research Station`,
 
-            polling_interval_seconds:
-                5,
+        timestamp:
+            new Date(),
 
-            modules: {
-                living_quarters: {
-                    module_id:
-                        "MOD-LQ-001",
+        polling_interval_seconds:
+            5,
 
-                    status:
-                        "operational",
+        modules: {
+            living_quarters: {
+                module_id:
+                    "MOD-LQ-001",
 
-                    status_values: [
-                        "operational",
-                        "fault",
-                        "maintenance",
-                        "offline"
-                    ],
+                status:
+                    "operational",
 
-                    status_color:
-                        "green",
+                status_values: [
+                    "operational",
+                    "fault",
+                    "maintenance",
+                    "offline",
+                ],
 
-                    thermal_management: {
-                        indoor_temperature_c:
-                            state.infrastructure
-                                .living_quarters_temperature_c,
+                status_color:
+                    "green",
 
-                        temperature_setpoint_c:
-                            20,
-
-                        temperature_critical_low_c:
-                            5,
-
-                        temperature_warning_low_c:
-                            10,
-
-                        temperature_trend:
-                            "stable",
-
-                        heating_active:
-                            true
-                    },
-
-                    environmental: {
-                        humidity_percent:
-                            45,
-
-                        humidity_max_threshold:
-                            60,
-
-                        humidity_warning_threshold:
-                            55,
-
-                        air_circulation_status:
-                            "nominal",
-
-                        co2_level_ppm:
-                            420
-                    },
-
-                    safety: {
-                        fire_alarm_status:
-                            false,
-
-                        smoke_detector_status:
-                            "active",
-
-                        sprinkler_system:
-                            "active",
-
-                        emergency_exits_clear:
-                            true
-                    },
-
-                    occupancy: {
-                        current_occupants:
-                            6,
-
-                        max_capacity:
-                            8,
-
-                        occupancy_percent:
-                            75
-                    }
-                },
-
-                main_lab: {
-                    module_id:
-                        "MOD-LAB-001",
-
-                    status:
-                        "operational",
-
-                    status_values: [
-                        "operational",
-                        "fault",
-                        "maintenance",
-                        "offline"
-                    ],
-
-                    status_color:
-                        "green",
-
-                    thermal_management: {
-                        indoor_temperature_c:
-                            state.infrastructure
-                                .main_lab_temperature_c,
-
-                        temperature_setpoint_c:
-                            20,
-
-                        temperature_critical_low_c:
-                            5,
-
-                        temperature_warning_low_c:
-                            10,
-
-                        temperature_trend:
-                            "stable",
-
-                        heating_active:
-                            true
-                    },
-
-                    environmental: {
-                        humidity_percent:
-                            42,
-
-                        humidity_max_threshold:
-                            50,
-
-                        air_circulation_status:
-                            "nominal"
-                    },
-
-                    equipment: {
-                        research_equipment_operational_percent:
-                            100,
-
-                        critical_equipment_status:
-                            "all_operational",
-
-                        freezer_units_temp_c:
-                            -20
-                    },
-
-                    safety: {
-                        fire_alarm_status:
-                            false,
-
-                        chemical_storage_secure:
-                            true
-                    }
-                },
-
-                storage_module: {
-                    module_id:
-                        "MOD-STORAGE-001",
-
-                    status:
-                        "operational",
-
-                    status_values: [
-                        "operational",
-                        "fault",
-                        "maintenance",
-                        "offline"
-                    ],
-
-                    status_color:
-                        "green",
-
-                    thermal_management: {
-                        indoor_temperature_c:
-                            state.infrastructure
-                                .storage_temperature_c,
-
-                        temperature_setpoint_c:
-                            -5,
-
-                        temperature_critical_high_c:
-                            0,
-
-                        temperature_warning_high_c:
-                            -2,
-
-                        temperature_trend:
-                            "stable",
-
-                        refrigeration_active:
-                            true
-                    },
-
-                    inventory_storage: {
-                        total_capacity_percent:
-                            85,
-
-                        food_storage_status:
-                            "adequate",
-
-                        medical_storage_status:
-                            "adequate"
-                    }
-                }
-            },
-
-            systems: {
-                hvac_main: {
-                    system_id:
-                        "HVAC-001",
-
-                    status:
+                thermal_management: {
+                    indoor_temperature_c:
                         state.infrastructure
-                            .hvac_status,
+                            .living_quarters_temperature_c,
 
-                    status_values: [
+                    temperature_setpoint_c:
+                        20,
+
+                    temperature_critical_low_c:
+                        5,
+
+                    temperature_warning_low_c:
+                        10,
+
+                    temperature_trend:
+                        "stable",
+
+                    heating_active:
+                        true,
+                },
+
+                environmental: {
+                    humidity_percent:
+                        45,
+
+                    humidity_max_threshold:
+                        60,
+
+                    humidity_warning_threshold:
+                        55,
+
+                    air_circulation_status:
                         "nominal",
-                        "fault",
-                        "degraded",
-                        "maintenance"
-                    ],
 
-                    status_color:
-                        state.infrastructure
-                            .hvac_status ===
-                        "nominal"
-                            ? "green"
-                            : "red",
-
-                    description:
-                        "Primary heating, ventilation, and air conditioning system",
-
-                    operation: {
-                        heating_active:
-                            true,
-
-                        ventilation_active:
-                            true,
-
-                        backup_available:
-                            true,
-
-                        efficiency_percent:
-                            94
-                    },
-
-                    performance: {
-                        air_circulation_cfm:
-                            5420,
-
-                        target_circulation_cfm:
-                            5500,
-
-                        heat_exchanger_efficiency_percent:
-                            94
-                    },
-
-                    thresholds: {
-                        maintenance_due_hours:
-                            250,
-
-                        last_maintenance_date:
-                            new Date(
-                                "2026-08-20"
-                            ),
-
-                        next_maintenance_due:
-                            new Date(
-                                "2026-10-15"
-                            )
-                    }
+                    co2_level_ppm:
+                        420,
                 },
 
-                hvac_backup: {
-                    system_id:
-                        "HVAC-BACKUP-001",
+                safety: {
+                    fire_alarm_status:
+                        false,
 
-                    status:
-                        "standby",
+                    smoke_detector_status:
+                        "active",
 
-                    backup_heating_available:
-                        true
-                }
+                    sprinkler_system:
+                        "active",
+
+                    emergency_exits_clear:
+                        true,
+                },
+
+                occupancy: {
+                    current_occupants:
+                        6,
+
+                    max_capacity:
+                        8,
+
+                    occupancy_percent:
+                        75,
+                },
             },
 
-            structural_health: {
-                snow_load_on_roof_kg:
-                    Math.round(
-                        snowLoad
-                    ),
+            main_lab: {
+                module_id:
+                    "MOD-LAB-001",
 
-                snow_load_threshold_kg:
-                    20000,
+                status:
+                    "operational",
 
-                snow_load_critical_threshold_kg:
-                    25000,
+                status_values: [
+                    "operational",
+                    "fault",
+                    "maintenance",
+                    "offline",
+                ],
 
-                structural_integrity_percent:
-                    round(
-                        structuralIntegrity,
-                        0
-                    ),
+                status_color:
+                    "green",
 
-                roof_strain_sensors:
+                thermal_management: {
+                    indoor_temperature_c:
+                        state.infrastructure
+                            .main_lab_temperature_c,
+
+                    temperature_setpoint_c:
+                        20,
+
+                    temperature_critical_low_c:
+                        5,
+
+                    temperature_warning_low_c:
+                        10,
+
+                    temperature_trend:
+                        "stable",
+
+                    heating_active:
+                        true,
+                },
+
+                environmental: {
+                    humidity_percent:
+                        42,
+
+                    humidity_max_threshold:
+                        50,
+
+                    air_circulation_status:
+                        "nominal",
+                },
+
+                equipment: {
+                    research_equipment_operational_percent:
+                        100,
+
+                    critical_equipment_status:
+                        "all_operational",
+
+                    freezer_units_temp_c:
+                        -20,
+                },
+
+                safety: {
+                    fire_alarm_status:
+                        false,
+
+                    chemical_storage_secure:
+                        true,
+                },
+            },
+
+            storage_module: {
+                module_id:
+                    "MOD-STORAGE-001",
+
+                status:
+                    "operational",
+
+                status_values: [
+                    "operational",
+                    "fault",
+                    "maintenance",
+                    "offline",
+                ],
+
+                status_color:
+                    "green",
+
+                thermal_management: {
+                    indoor_temperature_c:
+                        state.infrastructure
+                            .storage_temperature_c,
+
+                    temperature_setpoint_c:
+                        -5,
+
+                    temperature_critical_high_c:
+                        0,
+
+                    temperature_warning_high_c:
+                        -2,
+
+                    temperature_trend:
+                        "stable",
+
+                    refrigeration_active:
+                        true,
+                },
+
+                inventory_storage: {
+                    total_capacity_percent:
+                        85,
+
+                    food_storage_status:
+                        "adequate",
+
+                    medical_storage_status:
+                        "adequate",
+                },
+            },
+        },
+
+        systems: {
+            hvac_main: {
+                system_id:
+                    "HVAC-001",
+
+                status:
+                    state.infrastructure.hvac_status,
+
+                status_values: [
                     "nominal",
+                    "fault",
+                    "degraded",
+                    "maintenance",
+                ],
 
-                foundation_status:
-                    "stable"
+                status_color:
+                    state.infrastructure.hvac_status ===
+                    "nominal"
+                        ? "green"
+                        : "red",
+
+                description:
+                    "Primary heating, ventilation, and air conditioning system",
+
+                operation: {
+                    heating_active:
+                        true,
+
+                    ventilation_active:
+                        true,
+
+                    backup_available:
+                        true,
+
+                    efficiency_percent:
+                        94,
+                },
+
+                performance: {
+                    air_circulation_cfm:
+                        5420,
+
+                    target_circulation_cfm:
+                        5500,
+
+                    heat_exchanger_efficiency_percent:
+                        94,
+                },
+
+                thresholds: {
+                    maintenance_due_hours:
+                        250,
+
+                    last_maintenance_date:
+                        new Date("2026-08-20"),
+
+                    next_maintenance_due:
+                        new Date("2026-10-15"),
+                },
             },
 
-            alerts_local: [],
+            hvac_backup: {
+                system_id:
+                    "HVAC-BACKUP-001",
 
-            system_health_score:
+                status:
+                    "standby",
+
+                backup_heating_available:
+                    true,
+            },
+        },
+
+        structural_health: {
+            snow_load_on_roof_kg:
+                Math.round(snowLoad),
+
+            snow_load_threshold_kg:
+                20000,
+
+            snow_load_critical_threshold_kg:
+                25000,
+
+            structural_integrity_percent:
                 round(
                     structuralIntegrity,
                     0
                 ),
 
-            system_health_trend:
-                snowLoad > 20000
-                    ? "deteriorating"
-                    : "stable"
-        };
-    };
+            roof_strain_sensors:
+                "nominal",
 
-const saveSimulationSnapshot =
-    async (stationId) => {
-        const state =
-            getSimulationState(
-                stationId
-            );
+            foundation_status:
+                "stable",
+        },
 
-        simulateEnvironment(
-            state
-        );
+        alerts_local:
+            [],
 
-        simulateEnergy(
-            state
-        );
-
-        simulateInfrastructure(
-            state
-        );
-
-        const environmentDocument =
-            buildEnvironmentDocument(
-                state
-            );
-
-        const energyDocument =
-            buildEnergyDocument(
-                state
-            );
-
-        const infrastructureDocument =
-            buildInfrastructureDocument(
-                state
-            );
-
-        await Promise.all([
-            Environment.create(
-                environmentDocument
+        system_health_score:
+            round(
+                structuralIntegrity,
+                0
             ),
 
-            Energy.create(
-                energyDocument
-            ),
-
-            Infrastructure.create(
-                infrastructureDocument
-            )
-        ]);
-
-        await saveMasterAlertSnapshot(
-            state.station_id
-        );
-
-        return {
-            station_id:
-                state.station_id,
-
-            timestamp:
-                new Date()
-        };
+        system_health_trend:
+            snowLoad > 20000
+                ? "deteriorating"
+                : "stable",
     };
+};
 
-const startSimulation = async (
+/* ============================================================
+   SAVE ONE SIMULATION SNAPSHOT
+   ============================================================ */
+
+const saveSimulationSnapshot = async (
     stationId
 ) => {
+    if (
+        !stationId ||
+        !stationId.trim()
+    ) {
+        throw new Error(
+            "Station ID is required"
+        );
+    }
+
     const normalizedStationId =
         stationId
             .trim()
             .toUpperCase();
 
+    const state =
+        getSimulationState(
+            normalizedStationId
+        );
+
+    /*
+     * Find actual Station document.
+     *
+     * Environment uses:
+     * station -> ObjectId
+     *
+     * Energy uses:
+     * station_id -> String
+     *
+     * Infrastructure uses:
+     * station_id -> String
+     */
     const station =
         await Station.findOne({
             code:
                 normalizedStationId,
-            isActive: true
+
+            isActive:
+                true,
         });
 
     if (!station) {
         throw new Error(
-            "Station not found"
+            `Station ${normalizedStationId} not found`
         );
     }
 
+    /* ---------------------------------------------------------
+       UPDATE STATE
+       --------------------------------------------------------- */
+
+    simulateEnvironment(state);
+
+    simulateEnergy(state);
+
+    simulateInfrastructure(state);
+
+    /* ---------------------------------------------------------
+       BUILD DOCUMENTS
+       --------------------------------------------------------- */
+
+    const environmentDocument =
+        buildEnvironmentDocument(
+            state,
+            station
+        );
+
+    const energyDocument =
+        buildEnergyDocument(state);
+
+    const infrastructureDocument =
+        buildInfrastructureDocument(state);
+
+    /* ---------------------------------------------------------
+       SAVE TELEMETRY
+       --------------------------------------------------------- */
+
+    await Promise.all([
+        Environment.create(
+            environmentDocument
+        ),
+
+        Energy.create(
+            energyDocument
+        ),
+
+        Infrastructure.create(
+            infrastructureDocument
+        ),
+    ]);
+
+    /* ---------------------------------------------------------
+       SAVE MASTER ALERT
+       --------------------------------------------------------- */
+
+    await saveMasterAlertSnapshot(
+        normalizedStationId
+    );
+
+    console.log(
+        `Simulation snapshot saved: ${normalizedStationId}`
+    );
+
+    return {
+        station_id:
+            normalizedStationId,
+
+        timestamp:
+            new Date(),
+    };
+};
+
+/* ============================================================
+   START SIMULATION FOR ONE STATION
+   ============================================================ */
+
+const startSimulation = async (
+    stationId
+) => {
     if (
-        simulationInterval
+        !stationId ||
+        !stationId.trim()
+    ) {
+        throw new Error(
+            "Station ID is required"
+        );
+    }
+
+    const normalizedStationId =
+        stationId
+            .trim()
+            .toUpperCase();
+
+    /* ---------------------------------------------------------
+       VERIFY STATION
+       --------------------------------------------------------- */
+
+    const station =
+        await Station.findOne({
+            code:
+                normalizedStationId,
+
+            isActive:
+                true,
+        });
+
+    if (!station) {
+        throw new Error(
+            `Station ${normalizedStationId} not found`
+        );
+    }
+
+    /* ---------------------------------------------------------
+       PREVENT DUPLICATE SIMULATION
+       FOR THIS STATION ONLY
+       --------------------------------------------------------- */
+
+    if (
+        simulationIntervals[
+            normalizedStationId
+        ]
     ) {
         return {
             message:
-                "Simulation is already running"
+                "Simulation is already running",
+
+            station_id:
+                normalizedStationId,
+
+            interval_seconds:
+                TICK_RATE_SEC,
         };
     }
 
+    /* ---------------------------------------------------------
+       RESET STATE
+       --------------------------------------------------------- */
+
     simulationState[
         normalizedStationId
-    ] =
-        getInitialState(
-            normalizedStationId
-        );
+    ] = getInitialState(
+        normalizedStationId
+    );
+
+    /* ---------------------------------------------------------
+       FIRST SNAPSHOT IMMEDIATELY
+       --------------------------------------------------------- */
 
     await saveSimulationSnapshot(
         normalizedStationId
     );
 
-    simulationInterval =
-        setInterval(
-            async () => {
-                try {
-                    await saveSimulationSnapshot(
-                        normalizedStationId
-                    );
+    /* ---------------------------------------------------------
+       CREATE STATION-SPECIFIC INTERVAL
+       --------------------------------------------------------- */
 
-                    console.log(
-                        `Simulation tick: ${normalizedStationId}`
-                    );
-                } catch (error) {
-                    console.error(
-                        "Simulation tick error:",
-                        error.message
-                    );
-                }
-            },
-            TICK_RATE_SEC *
-                1000
-        );
+    simulationIntervals[
+        normalizedStationId
+    ] = setInterval(
+        async () => {
+            try {
+                await saveSimulationSnapshot(
+                    normalizedStationId
+                );
+
+                console.log(
+                    `Simulation tick: ${normalizedStationId}`
+                );
+            } catch (error) {
+                console.error(
+                    `Simulation tick error [${normalizedStationId}]:`,
+                    error.message
+                );
+            }
+        },
+        TICK_RATE_SEC * 1000
+    );
 
     return {
         message:
@@ -1781,49 +1793,227 @@ const startSimulation = async (
             normalizedStationId,
 
         interval_seconds:
-            TICK_RATE_SEC
+            TICK_RATE_SEC,
     };
 };
 
-const stopSimulation = () => {
-    if (
-        !simulationInterval
-    ) {
+/* ============================================================
+   START SIMULATION FOR ALL ACTIVE STATIONS
+   ============================================================ */
+
+const startAllActiveSimulations = async () => {
+    const stations =
+        await Station.find({
+            isActive: true,
+        }).select(
+            "code name"
+        );
+
+    if (!stations.length) {
+        console.log(
+            "No active stations found for simulation."
+        );
+
         return {
             message:
-                "Simulation is not running"
+                "No active stations found",
+
+            stations_started:
+                0,
         };
     }
 
-    clearInterval(
-        simulationInterval
-    );
+    let startedCount = 0;
 
-    simulationInterval =
-        null;
+    for (
+        const station of stations
+    ) {
+        try {
+            await startSimulation(
+                station.code
+            );
+
+            startedCount++;
+
+            console.log(
+                `Auto simulation started: ${station.code}`
+            );
+        } catch (error) {
+            console.error(
+                `Failed to start simulation for ${station.code}:`,
+                error.message
+            );
+        }
+    }
 
     return {
         message:
-            "Simulation stopped successfully"
+            "All active station simulations started",
+
+        stations_started:
+            startedCount,
+
+        total_active_stations:
+            stations.length,
     };
 };
 
-const getSimulationStatus =
-    () => {
-        return {
-            running:
-                Boolean(
-                    simulationInterval
-                ),
+/* ============================================================
+   STOP SIMULATION FOR ONE STATION
+   ============================================================ */
 
-            tick_rate_seconds:
-                TICK_RATE_SEC
+const stopSimulation = (
+    stationId
+) => {
+    if (
+        !stationId ||
+        !stationId.trim()
+    ) {
+        throw new Error(
+            "Station ID is required"
+        );
+    }
+
+    const normalizedStationId =
+        stationId
+            .trim()
+            .toUpperCase();
+
+    const interval =
+        simulationIntervals[
+            normalizedStationId
+        ];
+
+    if (!interval) {
+        return {
+            message:
+                "Simulation is not running",
+
+            station_id:
+                normalizedStationId,
         };
+    }
+
+    clearInterval(interval);
+
+    delete simulationIntervals[
+        normalizedStationId
+    ];
+
+    return {
+        message:
+            "Simulation stopped successfully",
+
+        station_id:
+            normalizedStationId,
     };
+};
+
+/* ============================================================
+   STOP ALL SIMULATIONS
+   ============================================================ */
+
+const stopAllSimulations = () => {
+    const stations =
+        Object.keys(
+            simulationIntervals
+        );
+
+    for (
+        const stationId of stations
+    ) {
+        clearInterval(
+            simulationIntervals[
+                stationId
+            ]
+        );
+
+        delete simulationIntervals[
+            stationId
+        ];
+    }
+
+    return {
+        message:
+            "All simulations stopped successfully",
+
+        stations_stopped:
+            stations.length,
+    };
+};
+
+/* ============================================================
+   GET SIMULATION STATUS
+   ============================================================ */
+
+const getSimulationStatus = () => {
+    const runningStations =
+        Object.keys(
+            simulationIntervals
+        );
+
+    return {
+        running:
+            runningStations.length > 0,
+
+        running_stations:
+            runningStations,
+
+        station_count:
+            runningStations.length,
+
+        tick_rate_seconds:
+            TICK_RATE_SEC,
+    };
+};
+
+/* ============================================================
+   GET STATION SIMULATION STATUS
+   ============================================================ */
+
+const getStationSimulationStatus = (
+    stationId
+) => {
+    const normalizedStationId =
+        stationId
+            ?.trim()
+            .toUpperCase();
+
+    if (!normalizedStationId) {
+        throw new Error(
+            "Station ID is required"
+        );
+    }
+
+    return {
+        station_id:
+            normalizedStationId,
+
+        running:
+            Boolean(
+                simulationIntervals[
+                    normalizedStationId
+                ]
+            ),
+
+        tick_rate_seconds:
+            TICK_RATE_SEC,
+    };
+};
+
+/* ============================================================
+   EXPORTS
+   ============================================================ */
 
 export {
     startSimulation,
+    startAllActiveSimulations,
+
     stopSimulation,
+    stopAllSimulations,
+
     getSimulationStatus,
-    saveSimulationSnapshot
+    getStationSimulationStatus,
+
+    saveSimulationSnapshot,
 };

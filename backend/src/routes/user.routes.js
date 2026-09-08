@@ -9,7 +9,10 @@ import {
     refreshAccessToken,
     googleOAuthCallback,
     verifyLoginOtp,
-    resendLoginOtp
+    resendLoginOtp,
+    forgotPassword,
+    resetPassword,
+    updatePassword
 } from "../controllers/user.controller.js";
 
 import {
@@ -19,6 +22,10 @@ import {
 import passport from "passport";
 
 const router = Router();
+
+/* ============================================================
+   PUBLIC AUTH ROUTES
+   ============================================================ */
 
 router.post(
     "/register",
@@ -44,6 +51,43 @@ router.post(
     "/refresh-token",
     refreshAccessToken
 );
+
+/* ============================================================
+   PASSWORD RECOVERY
+   ============================================================ */
+
+/*
+ * Request password recovery OTP.
+ *
+ * Body:
+ * {
+ *     email
+ * }
+ */
+router.post(
+    "/forgot-password",
+    forgotPassword
+);
+
+/*
+ * Complete password reset using OTP.
+ *
+ * Body:
+ * {
+ *     otp,
+ *     newPassword
+ * }
+ *
+ * passwordResetToken is stored in an HTTP-only cookie.
+ */
+router.post(
+    "/reset-password",
+    resetPassword
+);
+
+/* ============================================================
+   GOOGLE AUTHENTICATION
+   ============================================================ */
 
 router.get(
     "/google",
@@ -72,6 +116,10 @@ router.get(
     googleOAuthCallback
 );
 
+/* ============================================================
+   PROTECTED AUTH ROUTES
+   ============================================================ */
+
 router.post(
     "/logout",
     verifyJwt,
@@ -82,6 +130,21 @@ router.get(
     "/current-user",
     verifyJwt,
     getCurrentUser
+);
+
+/*
+ * Authenticated password change.
+ *
+ * Body:
+ * {
+ *     currentPassword,
+ *     newPassword
+ * }
+ */
+router.patch(
+    "/update-password",
+    verifyJwt,
+    updatePassword
 );
 
 router.get(

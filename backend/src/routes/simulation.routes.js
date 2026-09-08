@@ -4,21 +4,19 @@ import {
     startSimulationController,
     stopSimulationController,
     getSimulationStatusController,
-    generateSimulationSnapshot
+    generateSimulationSnapshot,
 } from "../controllers/simulation.controller.js";
 
 import {
     verifyJwt,
-    authorizeRoles
+    authorizeRoles,
 } from "../middlewares/auth.middleware.js";
 
-const router =
-    express.Router();
+const router = express.Router();
 
-router.use(
-    verifyJwt
-);
+router.use(verifyJwt);
 
+// Check simulation status
 router.get(
     "/status",
     authorizeRoles(
@@ -28,25 +26,31 @@ router.get(
     getSimulationStatusController
 );
 
+// Start simulation
 router.post(
     "/start",
     authorizeRoles(
+        "NCPOR Operator",
         "Station Manager"
     ),
     startSimulationController
 );
 
+// Stop simulation
 router.post(
     "/stop",
     authorizeRoles(
+        "NCPOR Operator",
         "Station Manager"
     ),
     stopSimulationController
 );
 
+// Generate a single snapshot
 router.post(
     "/snapshot",
     authorizeRoles(
+        "NCPOR Operator",
         "Station Manager"
     ),
     generateSimulationSnapshot

@@ -1,26 +1,25 @@
 import Requirement from "../models/requirementModel.js";
 import Station from "../models/stationModel.js";
 
-const createError = (
-    statusCode,
-    message
-) => {
+const createError = (statusCode, message) => {
     const error = new Error(message);
-
-    error.statusCode =
-        statusCode;
-
+    error.statusCode = statusCode;
     return error;
 };
 
-const getStationByCode = async (
-    stationCode
-) => {
-    const station =
-        await Station.findOne({
-            code: stationCode,
-            isActive: true
-        });
+/* ============================================================
+   STATION HELPERS
+   ============================================================ */
+
+const getStationByCode = async (stationCode) => {
+    const normalizedCode = stationCode
+        ?.trim()
+        .toUpperCase();
+
+    const station = await Station.findOne({
+        code: normalizedCode,
+        isActive: true,
+    });
 
     if (!station) {
         throw createError(
@@ -36,274 +35,580 @@ const hasStationAccess = (
     user,
     stationCode
 ) => {
+    /*
+        NCPOR Operator:
+        Global access
+    */
     if (
-        user.role ===
+        user?.role ===
         "NCPOR Operator"
     ) {
         return true;
     }
 
-    if (!user.station) {
-        return false;
+    /*
+        Logistics Manager:
+        Global access
+    */
+    if (
+        user?.role ===
+        "Logistics Manager"
+    ) {
+        return true;
     }
 
+    /*
+        Station Manager:
+        Only assigned station
+    */
+    if (
+        user?.role ===
+        "Station Manager"
+    ) {
+        if (!user?.station) {
+            return false;
+        }
+
+        return (
+            user.station
+                .trim()
+                .toUpperCase() ===
+            stationCode
+                .trim()
+                .toUpperCase()
+        );
+    }
+
+    return false;
+};
+
+/* ============================================================
+   CATEGORY NORMALIZATION
+
+   Frontend sends:
+   Rations
+   Medical
+   Fuel
+   Mechanical
+   Scientific
+
+   DO NOT convert these to uppercase because the Requirement
+   model enum expects the frontend-style values.
+   ============================================================ */
+
+const normalizeCategory = (category) => {
+    if (!category) {
+        return null;
+    }
+
+    const normalized = String(category)
+        .trim()
+        .toLowerCase();
+
+    const categoryMap = {
+        rations: "Rations",
+        medical: "Medical",
+        fuel: "Fuel",
+        mechanical: "Mechanical",
+        scientific: "Scientific",
+    };
+
+    return categoryMap[normalized] || null;
+};
+
+/* ============================================================
+   PRIORITY NORMALIZATION
+
+   Frontend sends:
+   Low
+   Medium
+   High
+
+   Backend workflow uses:
+   LOW
+   MEDIUM
+   HIGH
+   ============================================================ */
+
+const normalizePriority = (priority) => {
+    const normalized = String(
+        priority || "Medium"
+    )
+        .trim()
+        .toLowerCase();
+
+    const priorityMap = {
+        low: "LOW",
+        medium: "MEDIUM",
+        high: "HIGH",
+    };
+
     return (
-        user.station
-            .trim()
-            .toUpperCase() ===
-        stationCode
-            .trim()
-            .toUpperCase()
+        priorityMap[normalized] ||
+        null
     );
 };
 
+/* ============================================================
+   CREATE REQUIREMENT
 
-/*
-    CREATE REQUIREMENT
+   Station Manager only.
+   Frontend payload:
 
-    Station Manager only.
-*/
-const createRequirement =
-    async (req, res) => {
-        try {
-            if (
-                req.user.role !==
-                "Station Manager"
-            ) {
-                throw createError(
-                    403,
-                    "Only Station Manager can create a requirement"
+   {
+       item,
+       qty,
+       priority,
+       category,
+       notes
+   }
+
+   Backend generates:
+
+   requirementNumber
+   title
+   description
+   quantity
+   unit
+   station
+   createdBy
+   ============================================================ */
+
+const createRequirement = async (
+    req,
+    res
+) => {
+    try {
+        /* -------------------------------------------------------
+           ROLE CHECK
+        ------------------------------------------------------- */
+
+        if (
+            req?.user?.role !==
+            "Station Manager"
+        ) {
+            throw createError(
+                403,
+                "Only Station Manager can create a requirement"
+            );
+        }
+
+        /* -------------------------------------------------------
+           STATION ASSIGNMENT CHECK
+        ------------------------------------------------------- */
+
+        if (
+            !req?.user?.station ||
+            !req.user.station.trim()
+        ) {
+            throw createError(
+                403,
+                "User is not assigned to any station"
+            );
+        }
+
+        /* -------------------------------------------------------
+           FRONTEND PAYLOAD
+        ------------------------------------------------------- */
+
+        const {
+            item,
+            qty,
+            priority,
+            category,
+            notes,
+        } = req.body || {};
+
+        /* -------------------------------------------------------
+           ITEM VALIDATION
+        ------------------------------------------------------- */
+
+        if (
+            !item ||
+            !String(item).trim()
+        ) {
+            throw createError(
+                400,
+                "Item description is required"
+            );
+        }
+
+        /* -------------------------------------------------------
+           QUANTITY VALIDATION
+        ------------------------------------------------------- */
+
+        const quantity = Number(qty);
+
+        if (
+            !Number.isFinite(quantity) ||
+            quantity < 1
+        ) {
+            throw createError(
+                400,
+                "Quantity must be at least 1"
+            );
+        }
+
+        /* -------------------------------------------------------
+           CATEGORY VALIDATION
+        ------------------------------------------------------- */
+
+        if (
+            !category ||
+            !String(category).trim()
+        ) {
+            throw createError(
+                400,
+                "Category is required"
+            );
+        }
+
+        /* -------------------------------------------------------
+           NORMALIZE VALUES
+
+           IMPORTANT:
+           Category is mapped to Title Case instead of uppercase.
+           
+           Example:
+           "Fuel" -> "Fuel"
+           "fuel" -> "Fuel"
+           "FUEL" -> "Fuel"
+
+           Priority remains uppercase:
+           "Medium" -> "MEDIUM"
+        ------------------------------------------------------- */
+
+        const normalizedItem =
+            String(item).trim();
+
+        const normalizedCategory =
+            normalizeCategory(category);
+
+        if (!normalizedCategory) {
+            throw createError(
+                400,
+                "Invalid category. Use Rations, Medical, Fuel, Mechanical or Scientific"
+            );
+        }
+
+        const normalizedPriority =
+            normalizePriority(priority);
+
+        if (!normalizedPriority) {
+            throw createError(
+                400,
+                "Invalid priority. Use Low, Medium or High"
+            );
+        }
+
+        const description =
+            notes &&
+            String(notes).trim()
+                ? String(notes).trim()
+                : "";
+
+        /* -------------------------------------------------------
+           FIND ASSIGNED STATION
+        ------------------------------------------------------- */
+
+        const station =
+            await getStationByCode(
+                req.user.station
+            );
+
+        /* -------------------------------------------------------
+           VERIFY ACCESS
+        ------------------------------------------------------- */
+
+        if (
+            !hasStationAccess(
+                req.user,
+                station.code
+            )
+        ) {
+            throw createError(
+                403,
+                "You do not have access to this station"
+            );
+        }
+
+        /* -------------------------------------------------------
+           GENERATE REQUIREMENT NUMBER
+        ------------------------------------------------------- */
+
+        const requirementNumber =
+            `REQ-${Date.now()}`;
+
+        /* -------------------------------------------------------
+           TITLE
+        ------------------------------------------------------- */
+
+        const title =
+            normalizedItem;
+
+        /* -------------------------------------------------------
+           CREATE REQUIREMENT
+        ------------------------------------------------------- */
+
+        const requirement =
+            await Requirement.create({
+                requirementNumber,
+                title,
+                description,
+
+                /*
+                    IMPORTANT:
+                    "Fuel", NOT "FUEL"
+                */
+                category:
+                    normalizedCategory,
+
+                quantity,
+
+                /*
+                    Requirement model expects a unit.
+                    Frontend does not provide one.
+                */
+                unit: "unit",
+
+                station: station._id,
+
+                /*
+                    "MEDIUM", "HIGH", "LOW"
+                */
+                priority:
+                    normalizedPriority,
+
+                status: "PENDING",
+
+                createdBy:
+                    req.user._id,
+            });
+
+        /* -------------------------------------------------------
+           POPULATE RESPONSE
+        ------------------------------------------------------- */
+
+        const populatedRequirement =
+            await Requirement.findById(
+                requirement._id
+            )
+                .populate(
+                    "station",
+                    "name code"
+                )
+                .populate(
+                    "createdBy",
+                    "name email role station"
+                )
+                .populate(
+                    "processedBy",
+                    "name email role station"
                 );
-            }
 
-            if (!req.user.station) {
+        /* -------------------------------------------------------
+           RESPONSE
+        ------------------------------------------------------- */
+
+        return res
+            .status(201)
+            .json({
+                message:
+                    "Requirement created successfully",
+                requirement:
+                    populatedRequirement,
+            });
+
+    } catch (error) {
+        console.error(
+            "Create requirement error:",
+            error
+        );
+
+        return res
+            .status(
+                error?.statusCode || 500
+            )
+            .json({
+                message:
+                    error?.message ||
+                    "Failed to create requirement",
+            });
+    }
+};
+
+/* ============================================================
+   GET ALL REQUIREMENTS
+
+   NCPOR Operator:
+       All stations
+
+   Station Manager:
+       Own station
+
+   Logistics Manager:
+       All stations
+   ============================================================ */
+
+const getRequirements = async (
+    req,
+    res
+) => {
+    try {
+        const filter = {
+            isActive: true,
+        };
+
+        /* -------------------------------------------------------
+           STATION MANAGER
+        ------------------------------------------------------- */
+
+        if (
+            req?.user?.role ===
+            "Station Manager"
+        ) {
+            if (
+                !req.user.station ||
+                !req.user.station.trim()
+            ) {
                 throw createError(
                     403,
                     "User is not assigned to any station"
                 );
             }
 
-            const {
-                requirementNumber,
-                title,
-                description,
-                category,
-                quantity,
-                unit,
-                priority
-            } = req.body || {};
-
-            if (
-                !requirementNumber ||
-                !title ||
-                !category ||
-                quantity === undefined
-            ) {
-                throw createError(
-                    400,
-                    "Requirement number, title, category and quantity are required"
+            const station =
+                await getStationByCode(
+                    req.user.station
                 );
-            }
 
-            const normalizedRequirementNumber =
-                requirementNumber
+            filter.station =
+                station._id;
+        }
+
+        /* -------------------------------------------------------
+           OPTIONAL EXPLICIT STATION FILTER
+
+           Useful for NCPOR Operator / Logistics Manager.
+
+           Example:
+           GET /requirements?station_id=MAITRI
+        ------------------------------------------------------- */
+
+        const requestedStation =
+            req?.query?.station_id;
+
+        if (
+            requestedStation &&
+            req.user.role !==
+                "Station Manager"
+        ) {
+            const normalizedStation =
+                requestedStation
                     .trim()
                     .toUpperCase();
 
-            const existingRequirement =
-                await Requirement.findOne({
-                    requirementNumber:
-                        normalizedRequirementNumber
-                });
-
-            if (existingRequirement) {
+            if (
+                !hasStationAccess(
+                    req.user,
+                    normalizedStation
+                )
+            ) {
                 throw createError(
-                    409,
-                    "Requirement number already exists"
+                    403,
+                    "You do not have access to this station"
                 );
             }
 
             const station =
                 await getStationByCode(
-                    req.user.station
-                        .trim()
-                        .toUpperCase()
+                    normalizedStation
                 );
 
-            const requirement =
-                await Requirement.create({
-                    requirementNumber:
-                        normalizedRequirementNumber,
+            filter.station =
+                station._id;
+        }
 
-                    title:
-                        title.trim(),
+        /* -------------------------------------------------------
+           FETCH REQUIREMENTS
+        ------------------------------------------------------- */
 
-                    description:
-                        description?.trim() ||
-                        "",
-
-                    category,
-
-                    quantity,
-
-                    unit,
-
-                    station:
-                        station._id,
-
-                    priority:
-                        priority || "MEDIUM",
-
-                    status:
-                        "PENDING",
-
-                    createdBy:
-                        req.user._id
+        const requirements =
+            await Requirement.find(
+                filter
+            )
+                .populate(
+                    "station",
+                    "name code"
+                )
+                .populate(
+                    "createdBy",
+                    "name email role station"
+                )
+                .populate(
+                    "processedBy",
+                    "name email role station"
+                )
+                .sort({
+                    createdAt: -1,
                 });
 
-            const populatedRequirement =
-                await Requirement.findById(
-                    requirement._id
-                )
-                    .populate(
-                        "station",
-                        "name code"
-                    )
-                    .populate(
-                        "createdBy",
-                        "name email role station"
-                    )
-                    .populate(
-                        "processedBy",
-                        "name email role station"
-                    );
+        /* -------------------------------------------------------
+           RESPONSE
+        ------------------------------------------------------- */
 
-            return res.status(201).json({
-                message:
-                    "Requirement created successfully",
-
-                requirement:
-                    populatedRequirement
-            });
-        } catch (error) {
-            console.error(
-                "Create requirement error:",
-                error
-            );
-
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to create requirement"
-            });
-        }
-    };
-
-
-/*
-    GET ALL REQUIREMENTS
-
-    NCPOR Operator:
-        All stations
-
-    Station Manager:
-        Own station
-
-    Logistics Manager:
-        All requirements
-*/
-const getRequirements =
-    async (req, res) => {
-        try {
-            const filter = {
-                isActive: true
-            };
-
-            if (
-                req.user.role ===
-                "Station Manager"
-            ) {
-                if (!req.user.station) {
-                    throw createError(
-                        403,
-                        "User is not assigned to any station"
-                    );
-                }
-
-                const station =
-                    await getStationByCode(
-                        req.user.station
-                            .trim()
-                            .toUpperCase()
-                    );
-
-                filter.station =
-                    station._id;
-            }
-
-            const requirements =
-                await Requirement.find(
-                    filter
-                )
-                    .populate(
-                        "station",
-                        "name code"
-                    )
-                    .populate(
-                        "createdBy",
-                        "name email role station"
-                    )
-                    .populate(
-                        "processedBy",
-                        "name email role station"
-                    )
-                    .sort({
-                        createdAt: -1
-                    });
-
-            return res.status(200).json({
+        return res
+            .status(200)
+            .json({
                 message:
                     "Requirements fetched successfully",
-
                 count:
                     requirements.length,
-
-                requirements
+                requirements,
             });
-        } catch (error) {
-            console.error(
-                "Get requirements error:",
-                error
-            );
 
-            return res.status(
-                error.statusCode || 500
-            ).json({
+    } catch (error) {
+        console.error(
+            "Get requirements error:",
+            error
+        );
+
+        return res
+            .status(
+                error?.statusCode || 500
+            )
+            .json({
                 message:
-                    error.message ||
-                    "Failed to fetch requirements"
+                    error?.message ||
+                    "Failed to fetch requirements",
             });
-        }
-    };
+    }
+};
 
+/* ============================================================
+   GET REQUIREMENT BY NUMBER
+   ============================================================ */
 
-/*
-    GET REQUIREMENT BY NUMBER
-*/
 const getRequirementByNumber =
     async (req, res) => {
         try {
             const requirementNumber =
-                req.params.requirementNumber
-                    .trim()
+                req?.params
+                    ?.requirementNumber
+                    ?.trim()
                     .toUpperCase();
+
+            if (!requirementNumber) {
+                throw createError(
+                    400,
+                    "Requirement number is required"
+                );
+            }
 
             const requirement =
                 await Requirement.findOne({
                     requirementNumber,
-                    isActive: true
+                    isActive: true,
                 })
                     .populate(
                         "station",
@@ -325,76 +630,108 @@ const getRequirementByNumber =
                 );
             }
 
+            const stationCode =
+                requirement
+                    ?.station
+                    ?.code;
+
+            /* ---------------------------------------------------
+               ACCESS CHECK
+            --------------------------------------------------- */
+
             if (
                 !hasStationAccess(
                     req.user,
-                    requirement.station.code
+                    stationCode
                 )
             ) {
-                if (
-                    req.user.role !==
-                    "Logistics Manager"
-                ) {
-                    throw createError(
-                        403,
-                        "You do not have access to this requirement"
-                    );
-                }
+                throw createError(
+                    403,
+                    "You do not have access to this requirement"
+                );
             }
 
-            return res.status(200).json({
-                message:
-                    "Requirement fetched successfully",
+            return res
+                .status(200)
+                .json({
+                    message:
+                        "Requirement fetched successfully",
+                    requirement,
+                });
 
-                requirement
-            });
         } catch (error) {
             console.error(
                 "Get requirement error:",
                 error
             );
 
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to fetch requirement"
-            });
+            return res
+                .status(
+                    error?.statusCode || 500
+                )
+                .json({
+                    message:
+                        error?.message ||
+                        "Failed to fetch requirement",
+                });
         }
     };
 
+/* ============================================================
+   UPDATE REQUIREMENT STATUS
 
-/*
-    UPDATE REQUIREMENT STATUS
+   Logistics Manager:
 
-    Logistics Manager can:
-        PENDING -> PROCESSING
-        PROCESSING -> FULFILLED
+       PENDING
+           -> PROCESSING
+           -> REJECTED
 
-    Logistics Manager can reject:
-        PENDING -> REJECTED
+       PROCESSING
+           -> FULFILLED
 
-    Station Manager can cancel:
-        PENDING -> CANCELLED
-*/
+   Station Manager:
+
+       PENDING
+           -> CANCELLED
+   ============================================================ */
+
 const updateRequirementStatus =
     async (req, res) => {
         try {
             const requirementNumber =
-                req.params.requirementNumber
-                    .trim()
+                req?.params
+                    ?.requirementNumber
+                    ?.trim()
                     .toUpperCase();
+
+            if (!requirementNumber) {
+                throw createError(
+                    400,
+                    "Requirement number is required"
+                );
+            }
 
             const {
                 status,
-                rejectionReason
+                rejectionReason,
             } = req.body || {};
+
+            if (!status) {
+                throw createError(
+                    400,
+                    "Requirement status is required"
+                );
+            }
+
+            const normalizedStatus =
+                String(status)
+                    .trim()
+                    .toUpperCase();
 
             const requirement =
                 await Requirement.findOne({
                     requirementNumber,
-                    isActive: true
+                    isActive: true,
                 }).populate(
                     "station",
                     "name code"
@@ -407,13 +744,17 @@ const updateRequirementStatus =
                 );
             }
 
+            /* ---------------------------------------------------
+               ACCESS CHECK
+            --------------------------------------------------- */
+
             if (
                 !hasStationAccess(
                     req.user,
-                    requirement.station.code
-                ) &&
-                req.user.role !==
-                    "Logistics Manager"
+                    requirement
+                        ?.station
+                        ?.code
+                )
             ) {
                 throw createError(
                     403,
@@ -421,10 +762,10 @@ const updateRequirementStatus =
                 );
             }
 
+            /* ===================================================
+               LOGISTICS MANAGER
+               =================================================== */
 
-            /*
-                Logistics workflow
-            */
             if (
                 req.user.role ===
                 "Logistics Manager"
@@ -432,38 +773,44 @@ const updateRequirementStatus =
                 const validTransitions = {
                     PENDING: [
                         "PROCESSING",
-                        "REJECTED"
+                        "REJECTED",
                     ],
 
                     PROCESSING: [
-                        "FULFILLED"
+                        "FULFILLED",
                     ],
 
                     FULFILLED: [],
-
                     REJECTED: [],
-
-                    CANCELLED: []
+                    CANCELLED: [],
                 };
 
                 if (
                     !validTransitions[
                         requirement.status
-                    ]?.includes(status)
+                    ]?.includes(
+                        normalizedStatus
+                    )
                 ) {
                     throw createError(
                         400,
-                        `Cannot change requirement status from ${requirement.status} to ${status}`
+                        `Cannot change requirement status from ${requirement.status} to ${normalizedStatus}`
                     );
                 }
 
+                /* -----------------------------------------------
+                   REJECTION
+                ------------------------------------------------ */
+
                 if (
-                    status ===
+                    normalizedStatus ===
                     "REJECTED"
                 ) {
                     if (
                         !rejectionReason ||
-                        !rejectionReason.trim()
+                        !String(
+                            rejectionReason
+                        ).trim()
                     ) {
                         throw createError(
                             400,
@@ -472,11 +819,13 @@ const updateRequirementStatus =
                     }
 
                     requirement.rejectionReason =
-                        rejectionReason.trim();
+                        String(
+                            rejectionReason
+                        ).trim();
                 }
 
                 requirement.status =
-                    status;
+                    normalizedStatus;
 
                 requirement.processedBy =
                     req.user._id;
@@ -484,8 +833,12 @@ const updateRequirementStatus =
                 requirement.processedAt =
                     new Date();
 
+                /* -----------------------------------------------
+                   FULFILLED
+                ------------------------------------------------ */
+
                 if (
-                    status ===
+                    normalizedStatus ===
                     "FULFILLED"
                 ) {
                     requirement.fulfilledAt =
@@ -493,16 +846,16 @@ const updateRequirementStatus =
                 }
             }
 
+            /* ===================================================
+               STATION MANAGER
+               =================================================== */
 
-            /*
-                Station Manager cancellation
-            */
             else if (
                 req.user.role ===
                 "Station Manager"
             ) {
                 if (
-                    status !==
+                    normalizedStatus !==
                     "CANCELLED"
                 ) {
                     throw createError(
@@ -524,7 +877,9 @@ const updateRequirementStatus =
                 if (
                     !hasStationAccess(
                         req.user,
-                        requirement.station.code
+                        requirement
+                            ?.station
+                            ?.code
                     )
                 ) {
                     throw createError(
@@ -537,6 +892,10 @@ const updateRequirementStatus =
                     "CANCELLED";
             }
 
+            /* ===================================================
+               OTHER ROLES
+               =================================================== */
+
             else {
                 throw createError(
                     403,
@@ -544,7 +903,15 @@ const updateRequirementStatus =
                 );
             }
 
+            /* ---------------------------------------------------
+               SAVE
+            --------------------------------------------------- */
+
             await requirement.save();
+
+            /* ---------------------------------------------------
+               POPULATE UPDATED DOCUMENT
+            --------------------------------------------------- */
 
             const populatedRequirement =
                 await Requirement.findById(
@@ -563,44 +930,48 @@ const updateRequirementStatus =
                         "name email role station"
                     );
 
-            return res.status(200).json({
-                message:
-                    "Requirement status updated successfully",
+            /* ---------------------------------------------------
+               RESPONSE
+            --------------------------------------------------- */
 
-                requirement:
-                    populatedRequirement
-            });
+            return res
+                .status(200)
+                .json({
+                    message:
+                        "Requirement status updated successfully",
+                    requirement:
+                        populatedRequirement,
+                });
+
         } catch (error) {
             console.error(
                 "Update requirement status error:",
                 error
             );
 
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to update requirement status"
-            });
+            return res
+                .status(
+                    error?.statusCode || 500
+                )
+                .json({
+                    message:
+                        error?.message ||
+                        "Failed to update requirement status",
+                });
         }
     };
 
+/* ============================================================
+   DEACTIVATE REQUIREMENT
 
-/*
-    DEACTIVATE REQUIREMENT
+   Logistics Manager only.
+   ============================================================ */
 
-    Station Manager can cancel through
-    status endpoint.
-
-    Here only Logistics Manager can
-    deactivate a processed/old record.
-*/
 const deactivateRequirement =
     async (req, res) => {
         try {
             if (
-                req.user.role !==
+                req?.user?.role !==
                 "Logistics Manager"
             ) {
                 throw createError(
@@ -610,14 +981,22 @@ const deactivateRequirement =
             }
 
             const requirementNumber =
-                req.params.requirementNumber
-                    .trim()
+                req?.params
+                    ?.requirementNumber
+                    ?.trim()
                     .toUpperCase();
+
+            if (!requirementNumber) {
+                throw createError(
+                    400,
+                    "Requirement number is required"
+                );
+            }
 
             const requirement =
                 await Requirement.findOne({
                     requirementNumber,
-                    isActive: true
+                    isActive: true,
                 }).populate(
                     "station",
                     "name code"
@@ -630,9 +1009,13 @@ const deactivateRequirement =
                 );
             }
 
+            /* ---------------------------------------------------
+               PROCESSING PROTECTION
+            --------------------------------------------------- */
+
             if (
                 requirement.status ===
-                    "PROCESSING"
+                "PROCESSING"
             ) {
                 throw createError(
                     400,
@@ -640,35 +1023,47 @@ const deactivateRequirement =
                 );
             }
 
-            requirement.isActive =
-                false;
+            /* ---------------------------------------------------
+               DEACTIVATE
+            --------------------------------------------------- */
+
+            requirement.isActive = false;
 
             await requirement.save();
 
-            return res.status(200).json({
-                message:
-                    "Requirement deactivated successfully"
-            });
+            return res
+                .status(200)
+                .json({
+                    message:
+                        "Requirement deactivated successfully",
+                });
+
         } catch (error) {
             console.error(
                 "Deactivate requirement error:",
                 error
             );
 
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to deactivate requirement"
-            });
+            return res
+                .status(
+                    error?.statusCode || 500
+                )
+                .json({
+                    message:
+                        error?.message ||
+                        "Failed to deactivate requirement",
+                });
         }
     };
+
+/* ============================================================
+   EXPORTS
+   ============================================================ */
 
 export {
     createRequirement,
     getRequirements,
     getRequirementByNumber,
     updateRequirementStatus,
-    deactivateRequirement
+    deactivateRequirement,
 };

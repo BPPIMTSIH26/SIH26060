@@ -1,0 +1,98 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* 1. SCADA Status Colors (Mock Data & System States) */
+  --color-ok: #10b981;       /* Nominal / Emerald 500 */
+  --color-warn: #f59e0b;     /* Warning / Amber 500 */
+  --color-danger: #ef4444;   /* Critical / Red 500 */
+
+  /* 2. Component UI & Alert Theme Colors */
+  --color-success: #10b981;  /* Match OK state */
+  --color-warning: #f59e0b;  /* Match Warn state */
+  --color-critical: #ef4444; /* Match Danger state */
+  
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Tells the browser OS natively whether we are in dark or light mode */
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    /* IE and Edge */
+    -ms-overflow-style: none;
+    /* Firefox */
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    /* Chrome, Safari and Opera */
+    display: none;
+  }
+}
+
+/* ==========================================
+   UNIVERSAL FLOATING SCROLLBAR (VS Code Style)
+   ========================================== */
+
+/* 1. Global Page Scrollbar & Custom Scrollbars */
+::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+    width: 14px;
+    height: 14px; /* For horizontal scrollbars */
+}
+
+::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 2. Light Mode Thumb (Default) */
+::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border: 4px solid transparent; /* Magic padding */
+    background-clip: padding-box;  /* Keeps background inside the border */
+}
+
+::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* 3. Dark Mode Thumb */
+/* Note: html.dark (no space) targets the main window scrollbar! */
+html.dark::-webkit-scrollbar-thumb,
+.dark ::-webkit-scrollbar-thumb,
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+html.dark::-webkit-scrollbar-thumb:hover,
+.dark ::-webkit-scrollbar-thumb:hover,
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* 4. Firefox Support */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+html.dark {
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+}

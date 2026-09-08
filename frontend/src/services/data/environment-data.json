@@ -1,0 +1,129 @@
+{
+  "station_id": "Maitri",
+  "timestamp": "2026-08-24T14:00:00Z",
+  "polling_interval_seconds": 2,
+  "exterior_conditions": {
+    "temperature": {
+      "outside_temperature_c": -35.2,
+      "temperature_trend": "stable",
+      "temperature_rate_of_change_c_per_hour": -0.5,
+      "thresholds": {
+        "extreme_cold_c": -50,
+        "severe_cold_c": -40,
+        "warning_cold_c": -35
+      },
+      "alerts": {
+        "is_extreme_cold": false,
+        "is_severe_cold": false,
+        "is_warning_cold": true
+      }
+    },
+    "wind": {
+      "wind_speed_kmh": 42.5,
+      "wind_gust_kmh": 68.3,
+      "wind_direction": "SSE",
+      "wind_direction_degrees": 157,
+      "wind_trend": "increasing",
+      "thresholds": {
+        "blizzard_threshold_kmh": 100,
+        "severe_wind_threshold_kmh": 75,
+        "warning_wind_threshold_kmh": 60
+      },
+      "alerts": {
+        "is_blizzard_condition": false,
+        "is_severe_wind": false,
+        "is_warning_wind": false
+      }
+    },
+    "visibility": {
+      "visibility_meters": 3200,
+      "visibility_trend": "improving",
+      "thresholds": {
+        "whiteout_meters": 100,
+        "severe_visibility_meters": 500,
+        "poor_visibility_meters": 1000
+      },
+      "alerts": {
+        "is_whiteout": false,
+        "is_severe_visibility_low": false
+      }
+    }
+  },
+  "weather_phenomena": {
+    "blizzard": {
+      "blizzard_warning": false,
+      "blizzard_active": false,
+      "blizzard_trigger_conditions": {
+        "wind_speed_kmh": 42.5,
+        "wind_threshold": 100,
+        "visibility_meters": 3200,
+        "visibility_threshold": 500,
+        "both_conditions_met": false
+      },
+      "estimated_blizzard_duration_hours": 0,
+      "field_teams_affected_count": 0
+    },
+    "precipitation": {
+      "precipitation_type": "none",
+      "precipitation_type_values": [
+        "none",
+        "light_snow",
+        "moderate_snow",
+        "heavy_snow",
+        "ice"
+      ],
+      "precipitation_rate_mm_per_hour": 0.0,
+      "snow_accumulation_today_mm": 0.0,
+      "total_snow_depth_on_ground_cm": 185
+    },
+    "atmospheric": {
+      "atmospheric_pressure_mb": 1013.2,
+      "pressure_trend": "stable",
+      "humidity_percent": 68,
+      "uv_index": 4,
+      "ozone_level_dobson_units": 280
+    }
+  },
+  "solar_conditions": {
+    "solar_radiation_w_m2": 450.0,
+    "solar_radiation_trend": "stable",
+    "seasonal_phase": "austral_summer",
+    "daylight_hours": 18,
+    "solar_panel_efficiency_percent": 78
+  },
+  "interconnections_with_other_systems": {
+    "impact_on_energy": {
+      "wind_supporting_generation": false,
+      "solar_supporting_generation": true,
+      "solar_output_contribution_kw": 60
+    },
+    "impact_on_operations": {
+      "outdoor_operations_possible": true,
+      "field_team_safety_status": "safe",
+      "recommendations": "Monitor wind speeds. If approaching 75 kmh, recall field teams."
+    },
+    "impact_on_infrastructure": {
+      "snow_loading_on_roof": "moderate",
+      "structural_risk": "low",
+      "heating_demand": "moderate"
+    }
+  },
+  "emergency_scenarios": {
+    "scenario_blizzard_lockdown": {
+      "likelihood": "low",
+      "trigger_threshold_wind": 100,
+      "trigger_threshold_visibility": 500,
+      "current_status": "not_triggered",
+      "estimated_effect": "Complete operational lockdown, field teams recalled"
+    },
+    "scenario_extreme_cold": {
+      "likelihood": "medium",
+      "trigger_threshold_temp": -50,
+      "current_status": "not_triggered",
+      "estimated_effect": "Increased heating demand, equipment stress"
+    }
+  },
+  "alerts_local": [],
+  "system_health_score": 95,
+  "overall_weather_risk": "low"
+}

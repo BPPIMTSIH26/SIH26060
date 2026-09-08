@@ -2,15 +2,15 @@ import express from "express";
 import http from "http";
 import cookieParser from "cookie-parser";
 import passport from "passport";
+import cors from "cors";
 
 import "./config/passport.js";
 
 import userRoutes from "./routes/user.routes.js";
 import stationRoutes from "./routes/station.routes.js";
-import alertRoutes from "./routes/masterAlert.routes.js";
 import requirementRoutes from "./routes/requirement.routes.js";
 import logisticsRoutes from "./routes/logistics.routes.js";
-import environementRoutes from "./routes/environment.routes.js";
+import environmentRoutes from "./routes/environment.routes.js";
 import energyRoutes from "./routes/energy.routes.js";
 import infrastructureRoutes from "./routes/infrastructure.routes.js";
 import masterAlertRoutes from "./routes/masterAlert.routes.js";
@@ -24,11 +24,26 @@ import {
 
 const app = express();
 
-app.use(express.json());
+app.use(
+    cors({
+        origin:
+            process.env.FRONTEND_URL ||
+            "http://localhost:5173",
+        credentials: true
+    })
+);
 
-app.use(cookieParser());
+app.use(
+    express.json()
+);
 
-app.use(passport.initialize());
+app.use(
+    cookieParser()
+);
+
+app.use(
+    passport.initialize()
+);
 
 app.use(
     "/api/v1/users",
@@ -39,11 +54,6 @@ app.use(
     "/api/v1/stations",
     stationRoutes
 );
-app.use(
-    "/api/v1/alerts",
-    alertRoutes
-);
-
 
 app.use(
     "/api/v1/requirements",
@@ -52,24 +62,29 @@ app.use(
 
 app.use(
     "/api/v1/logistics",
-    logisticsRoutes,
+    logisticsRoutes
 );
+
 app.use(
     "/api/v1/environment",
-    environementRoutes
+    environmentRoutes
 );
+
 app.use(
     "/api/v1/energy",
     energyRoutes
 );
+
 app.use(
     "/api/v1/infrastructure",
     infrastructureRoutes
 );
+
 app.use(
     "/api/v1/master-alerts",
     masterAlertRoutes
 );
+
 app.use(
     "/api/v1/simulation",
     simulationRoutes

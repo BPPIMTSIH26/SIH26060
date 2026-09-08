@@ -13,9 +13,11 @@ import {
     authorizeRoles
 } from "../middlewares/auth.middleware.js";
 
-import authorizeStation from "../middlewares/station.middleware.js";
+import authorizeStation
+    from "../middlewares/station.middleware.js";
 
-const router = Router();
+const router =
+    Router();
 
 
 // GET ALL STATIONS
@@ -23,7 +25,9 @@ const router = Router();
 router.get(
     "/",
     verifyJwt,
-    authorizeRoles("NCPOR Operator"),
+    authorizeRoles(
+        "NCPOR Operator"
+    ),
     getAllStations
 );
 
@@ -31,7 +35,7 @@ router.get(
 // GET PARTICULAR STATION
 // NCPOR Operator -> any station
 // Station Manager -> assigned station
-// Logistics Manager -> assigned station
+// Logistics Manager -> global access
 router.get(
     "/:code",
     verifyJwt,
@@ -50,7 +54,9 @@ router.get(
 router.post(
     "/",
     verifyJwt,
-    authorizeRoles("NCPOR Operator"),
+    authorizeRoles(
+        "NCPOR Operator"
+    ),
     createStation
 );
 
@@ -60,7 +66,9 @@ router.post(
 router.patch(
     "/:code",
     verifyJwt,
-    authorizeRoles("NCPOR Operator"),
+    authorizeRoles(
+        "NCPOR Operator"
+    ),
     updateStation
 );
 
@@ -70,9 +78,10 @@ router.patch(
 router.delete(
     "/:code",
     verifyJwt,
-    authorizeRoles("NCPOR Operator"),
+    authorizeRoles(
+        "NCPOR Operator"
+    ),
     deactivateStation
 );
-
 
 export default router;

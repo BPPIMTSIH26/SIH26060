@@ -21,6 +21,7 @@ router.use(
     verifyJwt
 );
 
+// View logistics/dashboard/shipment data
 router.get(
     "/",
     authorizeRoles(
@@ -31,6 +32,7 @@ router.get(
     getShipments
 );
 
+// View a specific shipment
 router.get(
     "/:shipmentNumber",
     authorizeRoles(
@@ -41,6 +43,7 @@ router.get(
     getShipmentByNumber
 );
 
+// Logistics Manager creates shipment
 router.post(
     "/",
     authorizeRoles(
@@ -49,6 +52,7 @@ router.post(
     createShipment
 );
 
+// Logistics Manager updates shipment status
 router.patch(
     "/:shipmentNumber/status",
     authorizeRoles(
@@ -57,6 +61,7 @@ router.patch(
     updateShipmentStatus
 );
 
+// Station Manager approves arrival/receipt
 router.patch(
     "/:shipmentNumber/receive",
     authorizeRoles(
@@ -65,6 +70,7 @@ router.patch(
     receiveShipment
 );
 
+// Logistics Manager deactivates shipment
 router.delete(
     "/:shipmentNumber",
     authorizeRoles(

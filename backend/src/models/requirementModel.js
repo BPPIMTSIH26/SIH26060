@@ -4,78 +4,58 @@ const requirementSchema = new Schema(
     {
         requirementNumber: {
             type: String,
-            required: [
-                true,
-                "Requirement number is required"
-            ],
+            required: [true, "Requirement number is required"],
             unique: true,
+            trim: true,
             uppercase: true,
-            trim: true
         },
 
         title: {
             type: String,
-            required: [
-                true,
-                "Requirement title is required"
-            ],
-            trim: true
+            required: [true, "Requirement title is required"],
+            trim: true,
         },
 
         description: {
             type: String,
             trim: true,
-            default: ""
+            default: "",
         },
 
         category: {
             type: String,
+            required: [true, "Requirement category is required"],
             enum: [
                 "Food",
                 "Medical",
                 "Scientific Equipment",
                 "Fuel",
                 "Maintenance",
-                "General"
+                "General",
             ],
-            required: [
-                true,
-                "Requirement category is required"
-            ]
+            trim: true,
         },
 
         quantity: {
             type: Number,
-            required: [
-                true,
-                "Requirement quantity is required"
-            ],
-            min: [
-                1,
-                "Quantity must be at least 1"
-            ]
+            required: [true, "Requirement quantity is required"],
+            min: [1, "Quantity must be at least 1"],
         },
 
         unit: {
             type: String,
+            required: [true, "Requirement unit is required"],
             enum: [
+                "unit",
                 "kg",
                 "g",
                 "litre",
-                "unit",
                 "box",
-                "packet"
+                "packet",
             ],
-            default: "unit"
-        },
-
-        station: {
-            type: Schema.Types.ObjectId,
-            ref: "Station",
-            required: [
-                true,
-                "Station is required"
-            ]
+            default: "unit",
+            trim: true,
+            lowercase: true,
         },
 
         priority: {
@@ -84,9 +64,16 @@ const requirementSchema = new Schema(
                 "LOW",
                 "MEDIUM",
                 "HIGH",
-                "CRITICAL"
+                "CRITICAL",
             ],
-            default: "MEDIUM"
+            default: "MEDIUM",
+            uppercase: true,
+        },
+
+        station: {
+            type: Schema.Types.ObjectId,
+            ref: "Station",
+            required: [true, "Station is required"],
         },
 
         status: {
@@ -96,61 +83,82 @@ const requirementSchema = new Schema(
                 "PROCESSING",
                 "FULFILLED",
                 "REJECTED",
-                "CANCELLED"
+                "CANCELLED",
             ],
-            default: "PENDING"
+            default: "PENDING",
         },
 
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: "User",
-            required: [
-                true,
-                "Requirement creator is required"
-            ]
+            required: [true, "Created by user is required"],
         },
 
         processedBy: {
             type: Schema.Types.ObjectId,
             ref: "User",
-            default: null
+            default: null,
         },
 
         processedAt: {
             type: Date,
-            default: null
+            default: null,
         },
 
         fulfilledAt: {
             type: Date,
-            default: null
+            default: null,
         },
 
         rejectionReason: {
             type: String,
             trim: true,
-            default: ""
+            default: "",
         },
 
         isActive: {
             type: Boolean,
-            default: true
-        }
+            default: true,
+        },
     },
     {
-        timestamps: true
+        timestamps: true,
     }
 );
 
+/* ============================================================
+   INDEXES
+   ============================================================ */
+
+/*
+ * Requirement number must be unique.
+ * The unique:true field already creates a unique index,
+ * so an additional requirementNumber index is unnecessary.
+ */
+
 requirementSchema.index({
     station: 1,
-    status: 1
+    createdAt: -1,
+});
+
+requirementSchema.index({
+    station: 1,
+    status: 1,
 });
 
 requirementSchema.index({
     createdBy: 1,
-    createdAt: -1
+    createdAt: -1,
 });
+
+requirementSchema.index({
+    isActive: 1,
+    createdAt: -1,
+});
+
+/* ============================================================
+   MODEL
+   ============================================================ */
 
 const Requirement = model(
     "Requirement",

@@ -5,10 +5,7 @@ const createError = (
     message
 ) => {
     const error = new Error(message);
-
-    error.statusCode =
-        statusCode;
-
+    error.statusCode = statusCode;
     return error;
 };
 
@@ -16,6 +13,10 @@ const canAccessStation = (
     user,
     stationId
 ) => {
+    /*
+     * NCPOR Operator
+     * Global access
+     */
     if (
         user.role ===
         "NCPOR Operator"
@@ -23,20 +24,48 @@ const canAccessStation = (
         return true;
     }
 
-    if (!user.station) {
-        return false;
+    /*
+     * Logistics Manager
+     * Centralized role.
+     * No station assignment required.
+     */
+    if (
+        user.role ===
+        "Logistics Manager"
+    ) {
+        return true;
     }
 
-    return (
-        user.station
-            .trim()
-            .toUpperCase() ===
-        stationId
-            .trim()
-            .toUpperCase()
-    );
+    /*
+     * Station Manager
+     * Can access only assigned station.
+     */
+    if (
+        user.role ===
+        "Station Manager"
+    ) {
+        if (!user.station) {
+            return false;
+        }
+
+        return (
+            user.station
+                .trim()
+                .toUpperCase() ===
+            stationId
+                .trim()
+                .toUpperCase()
+        );
+    }
+
+    return false;
 };
 
+/*
+ * CREATE ENERGY DATA
+ *
+ * Station Manager only.
+ */
 const createEnergy =
     async (req, res) => {
         try {
@@ -67,6 +96,8 @@ const createEnergy =
                     .toUpperCase();
 
             if (
+                req.user.role ===
+                "Station Manager" &&
                 !canAccessStation(
                     req.user,
                     normalizedStationId
@@ -89,27 +120,21 @@ const createEnergy =
                 );
             }
 
-            if (
-                !fuel_system
-            ) {
+            if (!fuel_system) {
                 throw createError(
                     400,
                     "Fuel system data is required"
                 );
             }
 
-            if (
-                !power_distribution
-            ) {
+            if (!power_distribution) {
                 throw createError(
                     400,
                     "Power distribution data is required"
                 );
             }
 
-            if (
-                !battery_system
-            ) {
+            if (!battery_system) {
                 throw createError(
                     400,
                     "Battery system data is required"
@@ -146,28 +171,39 @@ const createEnergy =
                     system_health_trend
                 });
 
-            return res.status(201).json({
-                message:
-                    "Energy data created successfully",
+            return res
+                .status(201)
+                .json({
+                    message:
+                        "Energy data created successfully",
 
-                energy
-            });
+                    data:
+                        energy
+                });
         } catch (error) {
             console.error(
                 "Create energy error:",
                 error
             );
 
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to create energy data"
-            });
+            return res
+                .status(
+                    error.statusCode ||
+                    500
+                )
+                .json({
+                    message:
+                        error.message ||
+                        "Failed to create energy data"
+                });
         }
     };
 
+/*
+ * GET LATEST ENERGY DATA
+ *
+ * Used directly by the frontend.
+ */
 const getLatestEnergy =
     async (req, res) => {
         try {
@@ -176,6 +212,9 @@ const getLatestEnergy =
 
             let filter = {};
 
+            /*
+             * Station was explicitly selected.
+             */
             if (
                 requestedStation
             ) {
@@ -198,9 +237,15 @@ const getLatestEnergy =
 
                 filter.station_id =
                     normalizedStationId;
-            } else if (
-                req.user.role !==
-                "NCPOR Operator"
+            }
+
+            /*
+             * Station Manager without
+             * station_id in query.
+             */
+            else if (
+                req.user.role ===
+                "Station Manager"
             ) {
                 if (
                     !req.user.station
@@ -217,12 +262,18 @@ const getLatestEnergy =
                         .toUpperCase();
             }
 
+            /*
+             * NCPOR Operator and
+             * Logistics Manager can
+             * access global data.
+             */
             const energy =
-                await Energy.findOne(
-                    filter
-                ).sort({
-                    timestamp: -1
-                });
+                await Energy
+                    .findOne(filter)
+                    .sort({
+                        timestamp: -1
+                    })
+                    .lean();
 
             if (!energy) {
                 throw createError(
@@ -231,28 +282,47 @@ const getLatestEnergy =
                 );
             }
 
-            return res.status(200).json({
-                message:
-                    "Latest energy data fetched successfully",
+            /*
+             * IMPORTANT:
+             *
+             * Frontend does:
+             *
+             * const energyData = res.data;
+             *
+             * Therefore return energy
+             * inside data.
+             */
+            return res
+                .status(200)
+                .json({
+                    message:
+                        "Latest energy data fetched successfully",
 
-                energy
-            });
+                    data:
+                        energy
+                });
         } catch (error) {
             console.error(
                 "Get latest energy error:",
                 error
             );
 
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to fetch energy data"
-            });
+            return res
+                .status(
+                    error.statusCode ||
+                    500
+                )
+                .json({
+                    message:
+                        error.message ||
+                        "Failed to fetch energy data"
+                });
         }
     };
 
+/*
+ * GET ENERGY HISTORY
+ */
 const getEnergyHistory =
     async (req, res) => {
         try {
@@ -283,9 +353,11 @@ const getEnergyHistory =
 
                 filter.station_id =
                     normalizedStationId;
-            } else if (
-                req.user.role !==
-                "NCPOR Operator"
+            }
+
+            else if (
+                req.user.role ===
+                "Station Manager"
             ) {
                 if (
                     !req.user.station
@@ -307,55 +379,70 @@ const getEnergyHistory =
                     req.query.limit
                 ) || 100;
 
-            if (
-                limit < 1
-            ) {
-                limit = 1;
-            }
-
-            if (
-                limit > 500
-            ) {
-                limit = 500;
-            }
+            limit = Math.max(
+                1,
+                Math.min(
+                    limit,
+                    500
+                )
+            );
 
             const energy =
-                await Energy.find(
-                    filter
-                )
+                await Energy
+                    .find(filter)
                     .sort({
                         timestamp: -1
                     })
                     .limit(limit);
 
-            return res.status(200).json({
-                message:
-                    "Energy history fetched successfully",
+            return res
+                .status(200)
+                .json({
+                    message:
+                        "Energy history fetched successfully",
 
-                count:
-                    energy.length,
+                    count:
+                        energy.length,
 
-                energy
-            });
+                    energy
+                });
         } catch (error) {
             console.error(
                 "Get energy history error:",
                 error
             );
 
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to fetch energy history"
-            });
+            return res
+                .status(
+                    error.statusCode ||
+                    500
+                )
+                .json({
+                    message:
+                        error.message ||
+                        "Failed to fetch energy history"
+                });
         }
     };
 
+/*
+ * UPDATE ENERGY
+ *
+ * Station Manager only.
+ */
 const updateEnergy =
     async (req, res) => {
         try {
+            if (
+                req.user.role !==
+                "Station Manager"
+            ) {
+                throw createError(
+                    403,
+                    "Only Station Manager can update energy data"
+                );
+            }
+
             const {
                 id
             } = req.params;
@@ -397,8 +484,7 @@ const updateEnergy =
                 "system_health_trend"
             ];
 
-            let updated =
-                false;
+            let updated = false;
 
             for (
                 const field of allowedFields
@@ -410,8 +496,7 @@ const updateEnergy =
                     energy[field] =
                         req.body[field];
 
-                    updated =
-                        true;
+                    updated = true;
                 }
             }
 
@@ -424,25 +509,31 @@ const updateEnergy =
 
             await energy.save();
 
-            return res.status(200).json({
-                message:
-                    "Energy data updated successfully",
+            return res
+                .status(200)
+                .json({
+                    message:
+                        "Energy data updated successfully",
 
-                energy
-            });
+                    data:
+                        energy
+                });
         } catch (error) {
             console.error(
                 "Update energy error:",
                 error
             );
 
-            return res.status(
-                error.statusCode || 500
-            ).json({
-                message:
-                    error.message ||
-                    "Failed to update energy data"
-            });
+            return res
+                .status(
+                    error.statusCode ||
+                    500
+                )
+                .json({
+                    message:
+                        error.message ||
+                        "Failed to update energy data"
+                });
         }
     };
 

@@ -1,0 +1,144 @@
+{
+  "station_id": "Maitri",
+  "timestamp": "2026-08-24T14:00:00Z",
+  "station_health": {
+    "overall_health_score": 78,
+    "health_score_trend": "deteriorating",
+    "operational_status": "YELLOW",
+    "operational_status_values": ["GREEN", "YELLOW", "RED"],
+    "health_breakdown": {
+      "infrastructure_score": 96,
+      "energy_score": 65,
+      "environment_score": 92,
+      "logistics_score": 90,
+      "average_score": 86
+    }
+  },
+  "active_alerts": [
+    {
+      "alert_id": "ALERT-2026-0847",
+      "timestamp": "2026-08-24T14:00:00Z",
+      "severity": "CRITICAL",
+      "severity_levels": ["INFO", "WARNING", "CRITICAL"],
+      "severity_color": "red",
+      "trigger": "POWER_DEFICIT_ACTIVE",
+      "alert_message": "⚠️ POWER DEFICIT: Generation (185.5 kW) < Load (245.5 kW). Battery depleting at 60 kW deficit.",
+      "affected_systems": ["energy", "battery_backup"],
+      "current_state": {
+        "power_generation_kw": 185.5,
+        "power_load_kw": 245.5,
+        "deficit_kw": -60.0,
+        "battery_percent": 92,
+        "battery_depletion_rate_percent_per_hour": 25.7,
+        "battery_hours_remaining": 3.6
+      },
+      "recommended_actions": [
+        {
+          "priority": 1,
+          "action": "ACTIVATE_GEN_2",
+          "description": "Activate Generator 2 to provide additional 250 kW capacity"
+        },
+        {
+          "priority": 2,
+          "action": "SHED_NON_ESSENTIAL_LOAD",
+          "description": "Reduce non-critical lab operations to save 60 kW"
+        },
+        {
+          "priority": 3,
+          "action": "MONITOR_BATTERY",
+          "description": "If no action taken, battery will be critical in 3.6 hours"
+        }
+      ],
+      "escalation": {
+        "escalates_to_critical_if": "Battery drops below 20% OR load exceeds generation for >10 minutes",
+        "time_until_escalation": "2.8 hours"
+      }
+    },
+    {
+      "alert_id": "ALERT-2026-0848",
+      "timestamp": "2026-08-24T13:50:00Z",
+      "severity": "WARNING",
+      "severity_color": "yellow",
+      "trigger": "FUEL_DEPLETION_WARNING",
+      "alert_message": "⚠️ FUEL WATCH: Current fuel (76.5%) will last ~19 days at current consumption rate (2,040 L/day)",
+      "affected_systems": ["energy", "fuel_reserves"],
+      "current_state": {
+        "fuel_liters": 38250,
+        "fuel_percent": 76.5,
+        "daily_consumption_liters": 2040,
+        "days_remaining": 18.8,
+        "critical_threshold_days": 5
+      },
+      "recommended_actions": [
+        {
+          "priority": 1,
+          "action": "SCHEDULE_FUEL_SHIPMENT",
+          "description": "Next scheduled shipment arrives 2026-10-15 (52 days away). This may be too late."
+        },
+        {
+          "priority": 2,
+          "action": "CONSIDER_EMERGENCY_AIRLIFT",
+          "description": "Request emergency fuel airlift if resupply mission cannot be expedited"
+        }
+      ]
+    }
+  ],
+  "emergency_scenarios": [
+    {
+      "scenario_id": "SCENARIO-BLIZZARD",
+      "scenario_name": "Blizzard Lockdown",
+      "likelihood_percent": 15,
+      "trigger_conditions": {
+        "wind_speed_kmh": 100,
+        "visibility_meters": 500,
+        "duration_hours": "24+"
+      },
+      "current_trigger_status": false,
+      "current_wind": 42.5,
+      "current_visibility": 3200,
+      "projected_impact": {
+        "outdoor_operations": "COMPLETE_LOCKDOWN",
+        "personnel_movement": "RESTRICTED",
+        "supply_chain": "DISRUPTED",
+        "heating_demand_increase_percent": 40,
+        "estimated_power_load_increase_kw": 35
+      },
+      "recommended_prep_actions": [
+        "Ensure 48+ hours emergency fuel available",
+        "Secure all outdoor equipment",
+        "Recall field teams if wind approaches 75 kmh"
+      ]
+    },
+    {
+      "scenario_id": "SCENARIO-GENERATOR_FAILURE",
+      "scenario_name": "Generator 1 Failure",
+      "likelihood_percent": 8,
+      "trigger_condition": "Gen-1 maintenance exceeds 5000 hours or fault detected",
+      "current_status": "GEN-1 at 4,250 hours (750 hours until maintenance due)",
+      "projected_impact": {
+        "immediate": "Power generation drops to 0 kW (Gen-2 must activate)",
+        "battery_backup": "2.3 hours at current load",
+        "critical_in": "2 hours if Gen-2 not activated"
+      },
+      "mitigation": "Gen-2 standby ready. Activation time: <2 minutes"
+    }
+  ],
+  "interconnected_recommendations": {
+    "immediate_action": "Activate Gen-2 to resolve power deficit and reduce battery depletion",
+    "secondary_action": "Schedule emergency fuel airlift if Oct-15 resupply cannot be expedited",
+    "monitoring": "Track wind speeds closely. If approaching 75 kmh, prepare for blizzard lockdown"
+  },
+  "decision_support_dashboard": {
+    "key_metrics": {
+      "fuel_days_remaining": 18.8,
+      "battery_hours_remaining": 3.6,
+      "food_days_remaining": 45,
+      "power_deficit_kw": -60
+    },
+    "confidence_levels": {
+      "data_accuracy_percent": 95,
+      "model_reliability_percent": 88,
+      "recommendation_confidence_percent": 92
+    }
+  }
+}

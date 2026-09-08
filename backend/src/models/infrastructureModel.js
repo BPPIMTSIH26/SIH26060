@@ -5,7 +5,8 @@ const infrastructureSchema = new Schema(
         station_id: {
             type: String,
             required: [true, "Station ID is required"],
-            trim: true
+            trim: true,
+            uppercase: true
         },
 
         station_name: {
@@ -520,6 +521,39 @@ const infrastructureSchema = new Schema(
             }
         },
 
+        airlocks: [
+            {
+                airlock_id: {
+                    type: String,
+                    required: true,
+                    trim: true
+                },
+
+                status: {
+                    type: String,
+                    enum: [
+                        "secure",
+                        "maintenance",
+                        "warning",
+                        "danger"
+                    ],
+                    default: "secure"
+                },
+
+                cycles: {
+                    type: Number,
+                    min: 0,
+                    default: 0
+                },
+
+                pressure_drop_psi: {
+                    type: Number,
+                    min: 0,
+                    default: 0
+                }
+            }
+        ],
+
         structural_health: {
             snow_load_on_roof_kg: {
                 type: Number,
@@ -605,6 +639,26 @@ const infrastructureSchema = new Schema(
 infrastructureSchema.index({
     station_id: 1,
     timestamp: -1
+});
+
+infrastructureSchema.index({
+    "modules.living_quarters.status": 1
+});
+
+infrastructureSchema.index({
+    "modules.main_lab.status": 1
+});
+
+infrastructureSchema.index({
+    "modules.storage_module.status": 1
+});
+
+infrastructureSchema.index({
+    "systems.hvac_main.status": 1
+});
+
+infrastructureSchema.index({
+    "structural_health.structural_integrity_percent": 1
 });
 
 const Infrastructure = model(
