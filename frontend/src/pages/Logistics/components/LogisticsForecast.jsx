@@ -22,7 +22,7 @@ export default function LogisticsForecast({ logisticsJson }) {
             <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
             <div>
               <p className="text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">
-                Resupply Required in <span className="font-mono">{logistics_forecast.days_until_critical_resupply_needed}</span> Days
+                Resupply Required in <span className="font-mono">{Math.round(logistics_forecast.days_until_critical_resupply_needed || 0)}</span> Days
               </p>
               <p className="text-[0.65rem] font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                 {logistics_forecast.risk_assessment}

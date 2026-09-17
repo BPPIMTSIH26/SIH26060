@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { CheckCircle2, XCircle, Truck, PackageCheck, AlertTriangle, MessageSquare, Clock } from "lucide-react";
 
 export function QueueCard({ req, children }) {
@@ -94,7 +94,7 @@ export function StationMasterQueue({ requests, activeTab }) {
 }
 
 export function AuthorityQueue({ pending, onUpdate, activeTab }) {
-    // Inline state for Rejection Feedback Loop
+    // State for the floating Rejection Modal
     const [rejectId, setRejectId] = useState(null);
     const [reason, setReason] = useState("");
 
@@ -112,33 +112,14 @@ export function AuthorityQueue({ pending, onUpdate, activeTab }) {
     }
 
     return (
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50/80 dark:bg-amber-950/20 p-4 sm:p-5 font-sans h-full transition-colors">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-500" /> Pending Authorization
-            </h3>
-            <div className="space-y-3">
-                {pending.length === 0 ? <p className="text-sm font-medium text-slate-500">Queue clear. No pending approvals.</p> : pending.map(req => (
-                    <QueueCard key={req.id} req={req}>
-                        {rejectId === req.id ? (
-                            <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                                <p className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-500">Reason for Rejection</p>
-                                <input 
-                                    type="text" 
-                                    value={reason} 
-                                    onChange={(e) => setReason(e.target.value)} 
-                                    placeholder="e.g. Budget frozen, duplicate order..." 
-                                    className="w-full text-sm px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 outline-none focus:ring-1 focus:ring-red-500 text-slate-900 dark:text-white"
-                                    autoFocus
-                                />
-                                <div className="flex gap-2 mt-1">
-                                    <button onClick={() => { setRejectId(null); setReason(""); }} className="flex-1 py-1.5 rounded-md text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">Cancel</button>
-                                    <button 
-                                        onClick={() => { onUpdate(req.id, "REJECTED", { rejectReason: reason || "No reason provided." }); setRejectId(null); setReason(""); }} 
-                                        className="flex-1 py-1.5 rounded-md text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition-colors"
-                                    >Confirm</button>
-                                </div>
-                            </div>
-                        ) : (
+        <>
+            <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50/80 dark:bg-amber-950/20 p-4 sm:p-5 font-sans h-full transition-colors relative">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-500" /> Pending Authorization
+                </h3>
+                <div className="space-y-3">
+                    {pending.length === 0 ? <p className="text-sm font-medium text-slate-500">Queue clear. No pending approvals.</p> : pending.map(req => (
+                        <QueueCard key={req.id} req={req}>
                             <div className="flex sm:flex-col gap-2">
                                 <button onClick={() => onUpdate(req.id, "APPROVED")} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors">
                                     <CheckCircle2 className="w-4 h-4"/> Approve
@@ -147,11 +128,66 @@ export function AuthorityQueue({ pending, onUpdate, activeTab }) {
                                     <XCircle className="w-4 h-4"/> Reject
                                 </button>
                             </div>
-                        )}
-                    </QueueCard>
-                ))}
+                        </QueueCard>
+                    ))}
+                </div>
             </div>
-        </div>
+
+            {/* FLOATING REJECTION MODAL */}
+            {rejectId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden scale-100 animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 bg-red-50 dark:bg-red-950/20">
+                            <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-full shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-500" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-900 dark:text-white">Reject Requisition</h3>
+                                <p className="text-xs text-red-600 dark:text-red-400 font-medium tracking-wide">ID: {rejectId}</p>
+                            </div>
+                        </div>
+                        
+                        {/* Modal Body */}
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                                    Reason for Rejection
+                                </label>
+                                <textarea 
+                                    value={reason} 
+                                    onChange={(e) => setReason(e.target.value)} 
+                                    placeholder="Please provide a detailed reason for denying this request. This will be visible to the Station Master." 
+                                    rows="4"
+                                    className="w-full text-sm p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-red-500 text-slate-900 dark:text-white resize-none"
+                                    autoFocus
+                                />
+                            </div>
+                            
+                            {/* Modal Actions */}
+                            <div className="flex gap-3 pt-2">
+                                <button 
+                                    onClick={() => { setRejectId(null); setReason(""); }} 
+                                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={() => { 
+                                        onUpdate(rejectId, "REJECTED", { rejectReason: reason || "No reason provided." }); 
+                                        setRejectId(null); 
+                                        setReason(""); 
+                                    }} 
+                                    className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-700 shadow-sm transition-colors"
+                                >
+                                    Confirm Rejection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 

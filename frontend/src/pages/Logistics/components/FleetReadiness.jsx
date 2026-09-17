@@ -9,7 +9,8 @@ export default function FleetReadiness({ logisticsJson }) {
     id: ship.shipment_id.split('-').slice(1).join('-'), 
     type: `${ship.priority} Transport`,
     status: ship.shipment_status === "in_transit" ? "warning" : "ok",
-    health: Math.max(10, 100 - (ship.eta_days * 2))
+    // Force Health to strictly be a rounded integer
+    health: Math.round(Math.max(10, 100 - (Number(ship.eta_days) * 2)))
   }));
 
   return (

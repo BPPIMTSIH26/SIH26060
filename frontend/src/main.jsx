@@ -10,6 +10,7 @@ import Logistics from './pages/Logistics/Logistics.jsx'
 import Environment from './pages/Environment/Environment.jsx'
 import Infrastructure from './pages/Infrastructure/Infrastructure.jsx'
 import EnergyPower from './pages/EnergyPower/EnergyPower.jsx'
+import Profile from './pages/Profile/profile.jsx'
 import Auth from './components/Auth/Auth.jsx'
 import Edgecase from './components/Others/Edgecase.jsx'
 import { ToastProvider } from "./components/context/ToastContext.jsx";
@@ -49,6 +50,7 @@ const router = createBrowserRouter(
         <Route path='infrastructure' element={<Infrastructure />} />
         <Route path='energypower' element={<EnergyPower />} />
         <Route path='requisitions' element={<Requisitions />} />
+        <Route path='profile' element={<Profile />} />
       </Route>
       <Route path='resetpassword' element={<ProtectedRoute><ResetPasswordPage /></ProtectedRoute>}></Route>
 

@@ -17,6 +17,12 @@ const bgColors = {
   maintenance: "bg-amber-500/10"
 };
 
+// HELPER: Safely clamp floating point numbers
+const formatTemp = (val) => {
+  if (val === undefined || val === null || isNaN(val)) return "N/A";
+  return Number(val).toFixed(1); // Force exactly 1 decimal place
+};
+
 export default function HvacTable({ systems = [] }) {
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-950/60 transition-colors duration-300 overflow-x-auto font-sans">
@@ -41,9 +47,11 @@ export default function HvacTable({ systems = [] }) {
             <tr key={sys.id} className="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
               <td className="py-3.5 font-mono font-bold text-slate-900 dark:text-slate-100">{sys.id}</td>
               <td className="py-3.5 font-medium text-slate-600 dark:text-slate-300">{sys.zone}</td>
-              <td className="py-3.5 font-mono text-slate-500 dark:text-slate-400">{sys.target ?? "N/A"}</td>
+              <td className="py-3.5 font-mono text-slate-500 dark:text-slate-400">
+                {formatTemp(sys.target)}
+              </td>
               <td className={`py-3.5 font-mono font-bold ${Math.abs((sys.current ?? 0) - (sys.target ?? 0)) > 3 ? "text-red-500" : "text-slate-900 dark:text-slate-100"}`}>
-                {sys.current ?? "N/A"}
+                {formatTemp(sys.current)}
               </td>
               <td className="py-3.5 font-mono text-slate-600 dark:text-slate-300 tabular-nums">{sys.rpm ?? "N/A"}</td>
               <td className="py-3.5 text-right">

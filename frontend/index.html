@@ -1,12 +1,61 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    
+    <!-- ========================================== -->
+    <!-- Primary Meta Tags                          -->
+    <!-- ========================================== -->
+    <title>NCPOR Polar Twin | Antarctic Operations Command</title>
+    <meta name="title" content="NCPOR Polar Twin | Antarctic Operations Command" />
+    <meta name="description" content="Digital twin simulation engine for real-time telemetry, predictive infrastructure monitoring, and dynamic supply chain management for India's Antarctic research facilities." />
+    <meta name="keywords" content="NCPOR, Antarctica, Digital Twin, Maitri, Bharati, Telemetry, React, Dashboard" />
+    <meta name="author" content="Sayantan Pachal" />
+    
+    <!-- ========================================== -->
+    <!-- Theme & Icons                              -->
+    <!-- ========================================== -->
     <link rel="icon" type="image/svg+xml" href="/wp.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NCPOR Polar Twin</title>
+    <link rel="apple-touch-icon" href="/wp.png" />
+    <!-- Matches your dark theme background color -->
+    <meta name="theme-color" content="#0B1120" /> 
+
+    <!-- ========================================== -->
+    <!-- Open Graph / Facebook / LinkedIn           -->
+    <!-- ========================================== -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ncpordigi.vercel.app/" />
+    <meta property="og:title" content="NCPOR Polar Twin | Antarctic Operations Command" />
+    <meta property="og:description" content="Real-time telemetry and infrastructure monitoring for Indian Antarctic stations." />
+    <!-- Replace this image path with an actual screenshot of your dashboard in the public folder -->
+    <meta property="og:image" content="https://ncpordigi.vercel.app/og-image.jpg" />
+
+    <!-- ========================================== -->
+    <!-- Twitter                                    -->
+    <!-- ========================================== -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://ncpordigi.vercel.app/" />
+    <meta property="twitter:title" content="NCPOR Polar Twin | Antarctic Operations Command" />
+    <meta property="twitter:description" content="Real-time telemetry and infrastructure monitoring for Indian Antarctic stations." />
+    <meta property="twitter:image" content="https://ncpordigi.vercel.app/og-image.jpg" />
+
+    <!-- ========================================== -->
+    <!-- Performance Optimization                   -->
+    <!-- ========================================== -->
+    <!-- Tells the browser to warm up the connection to your Render backend early -->
+    <link rel="preconnect" href="https://polar-twin-backend-3lyo.onrender.com" crossorigin="anonymous" />
   </head>
+  
   <body>
+    <!-- Accessibility Fallback -->
+    <noscript>
+      <div style="font-family: sans-serif; padding: 2rem; text-align: center; color: #333;">
+        <strong>System Error:</strong> The Polar Twin Operations Command requires JavaScript to process live telemetry. Please enable JavaScript in your browser settings to continue.
+      </div>
+    </noscript>
+    
+    <!-- React Mount Point -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

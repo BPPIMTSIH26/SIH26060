@@ -7,7 +7,6 @@ import ThemeToggle from "../context/ThemeToggle";
 import AlertsDropdown from '../context/Alerts/AlertsDropdown';
 import { useToast } from "../context/ToastContext";
 
-// Added Requisitions (Shop) to the navigation bar
 const navLinks = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Infrastructure", to: "/infrastructure" },
@@ -22,12 +21,11 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate(); 
-
   const showToast = useToast();
 
   // 1. Retrieve and parse the user from LocalStorage
   const storedUser = localStorage.getItem("polar_twin_user");
-  let user = { fullName: "Unknown Operator", email: "operator@ncpor.gov", role: "operator", avatar: "" };
+  let user = { fullName: "Unknown Operator", email: "operator@ncpor.gov", role: "operator", avatar: "", station: null };
   
   if (storedUser && storedUser !== "undefined") {
       try {
@@ -36,7 +34,9 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
               fullName: parsedUser.fullName || parsedUser.name || "Operator",
               email: parsedUser.email || "operator@ncpor.gov",
               role: parsedUser.role || "operator",
-              avatar: parsedUser.avatar || ""
+              avatar: parsedUser.avatar || "",
+              // FIXED: Ensure the station is extracted from the user object
+              station: parsedUser.station || null 
           };
       } catch (error) {
           console.error("Failed to parse user data in header.");
@@ -45,21 +45,46 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
 
   const isStationMaster = user.role === "station_master";
 
-  // 2. Format the role (e.g., "station_master" -> "Station Master")
+  // 2. FIXED: Synchronize activeStation on mount to survive reloads
+  useEffect(() => {
+    if (isStationMaster && user.station) {
+        // Force the parent state to match the Station Master's assigned station
+        if (activeStation !== user.station) {
+            setActiveStation(user.station);
+        }
+    } else {
+        // For other roles, remember their last toggled station across reloads
+        const savedStation = localStorage.getItem("polar_twin_selected_station");
+        if (savedStation && savedStation !== activeStation && (savedStation === "Maitri" || savedStation === "Bharati")) {
+            setActiveStation(savedStation);
+        }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 3. Format the role
   const formatRole = (roleString) => {
       if (!roleString) return "Operator";
       return roleString.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  // 3. Handle Logout
+  // 4. Handle Logout
   const handleLogout = () => {
       setUserOpen(false);
       localStorage.removeItem("polar_twin_user"); 
+      localStorage.removeItem("polar_twin_selected_station"); // Clear station preference on logout
       
       if (typeof showToast === 'function') {
           showToast("Session securely terminated. Safe travels.", "info");
       }
       navigate("/auth", { replace: true }); 
+  };
+
+  // 5. FIXED: Custom toggle handler to save preference in LocalStorage
+  const handleStationToggle = (station) => {
+      localStorage.setItem("polar_twin_selected_station", station);
+      setActiveStation(station);
+      setMenuOpen(false);
   };
 
   const avatarUrl = user.avatar ? user.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=0f172a&color=06b6d4&bold=true`;
@@ -82,7 +107,7 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
   const renderStationButton = (station) => (
     <button 
       key={station}
-      onClick={() => { setActiveStation(station); setMenuOpen(false); }}
+      onClick={() => handleStationToggle(station)}
       className={`px-5 sm:py-1.5 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 flex-1 sm:flex-none ${
         activeStation === station 
           ? "bg-cyan-500 text-white dark:text-slate-900 shadow-sm" 
@@ -111,7 +136,7 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
               // LOCKED BADGE FOR STATION MASTER
               <div className="flex items-center gap-1.5 px-4 py-1.5 bg-cyan-100/50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 rounded-full text-cyan-700 dark:text-cyan-400 text-sm font-bold tracking-wider uppercase cursor-not-allowed">
                 <MapPin className="w-4 h-4" />
-                {activeStation}
+                {user.station || activeStation} {/* Dynamically show their actual station */}
               </div>
             ) : (
               // FULL TOGGLE FOR LOGISTICS & AUTHORITY
@@ -164,11 +189,6 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
                     <li>
                       <Link to="/profile" onClick={() => setUserOpen(false)} className="flex items-center px-4 py-2 hover:bg-amber-100/80 dark:hover:bg-slate-700 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
                         <UserRound className="w-4 h-4 mr-3" /> Profile
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to="/settings" onClick={() => setUserOpen(false)} className="flex items-center px-4 py-2 hover:bg-amber-100/80 dark:hover:bg-slate-700 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
-                        <Settings className="w-4 h-4 mr-3" /> System Settings
                       </Link>
                     </li>
                     <li>
@@ -232,7 +252,7 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
               // LOCKED BADGE FOR STATION MASTER (MOBILE)
               <div className="flex items-center justify-center gap-1.5 px-4 py-2 bg-cyan-100/50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 rounded-full text-cyan-700 dark:text-cyan-400 text-sm font-bold tracking-wider uppercase w-full max-w-xs">
                 <MapPin className="w-4 h-4" />
-                {activeStation}
+                {user.station || activeStation}
               </div>
             ) : (
               // FULL TOGGLE FOR LOGISTICS & AUTHORITY (MOBILE)

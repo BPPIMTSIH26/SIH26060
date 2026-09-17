@@ -1,12 +1,12 @@
 /* eslint-disable no-unused-vars */
+
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Activity, ShieldCheck, Zap, Thermometer, Box, Droplet, Wind, Battery } from "lucide-react";
 
-import { infrastructureAPI } from "../../services/infrastructure";
-import { energyAPI } from "../../services/energy";
-import { environmentAPI } from "../../services/environment";
-import { logisticsAPI } from "../../services/logistics";
+// Optimized Imports: Only 2 API calls now!
+import { telemetryAPI } from "../../services/telemetryAPI";
+import { logisticsAPI } from "../../services/logistics"; // adjust path if you renamed it to logisticsAPI.js
 
 import { StationOverview } from "./components/StationOverview";
 import { PillarCards } from "./components/PillarCards";
@@ -21,46 +21,75 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchAllData = async () => {
-      setLoading(true);
+    // 1. Initialize AbortController for network cancellation
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+
+    // Added a parameter: isBackgroundRefresh
+    const fetchAllData = async (isBackgroundRefresh = false) => {
+      // Only show skeleton loaders on the very first load
+      if (!isBackgroundRefresh) {
+        setLoading(true);
+      }
+      setError(null);
+      
       try {
-        const [infraRes, energyRes, envRes, logRes] = await Promise.all([
-          infrastructureAPI.getStationInfrastructure(activeStation),
-          energyAPI.getStationEnergy(activeStation),
-          environmentAPI.getStationEnvironment(activeStation),
-          logisticsAPI.getStationLogistics(activeStation)
+        const results = await Promise.allSettled([
+          telemetryAPI.getLiveTelemetry(activeStation, { signal }),
+          logisticsAPI.getStationLogistics(activeStation, { signal })
         ]);
 
-        if (isMounted) {
-          setDashboardData({
-            infra: infraRes.data,
-            energy: energyRes.data,
-            env: envRes.data,
-            logistics: logRes.data
-          });
+        if (signal.aborted) return;
+
+        const telemetryRes = results[0].status === 'fulfilled' ? results[0].value.data : null;
+        const logRes = results[1].status === 'fulfilled' ? results[1].value.data : null;
+
+        if (!telemetryRes && !logRes) {
+          throw new Error("Critical Failure: All station systems are offline.");
         }
+
+        setDashboardData({
+          infra: telemetryRes?.infrastructure,
+          energy: telemetryRes?.energy,
+          env: telemetryRes?.environment,
+          logistics: logRes
+        });
+
       } catch (err) {
-        if (isMounted) setError("Failed to synchronize station telemetry.");
+        if (!signal.aborted && !isBackgroundRefresh) {
+          setError(err.message || "Failed to synchronize station telemetry.");
+        }
       } finally {
-        if (isMounted) setLoading(false);
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchAllData();
-    return () => { isMounted = false; };
+    // 1. Fetch immediately on page load (shows skeletons)
+    fetchAllData(false);
+
+    // 2. Set up the 30-second background loop (NO skeletons)
+    const intervalId = setInterval(() => {
+      fetchAllData(true);
+    }, 30000); // 30000 ms = 30 seconds
+
+    // 3. Cleanup function strictly clears the timer and aborts pending requests
+    return () => { 
+      clearInterval(intervalId);
+      abortController.abort(); 
+    };
   }, [activeStation]);
 
   // =========================================================================
   // PERFECTLY STRUCTURED SKELETON LOADER
-  // Mirrors the exact grid and heights of the real dashboard components
   // =========================================================================
   if (loading) {
     return (
       <div className="min-h-screen bg-amber-50 dark:bg-slate-950 font-sans">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6">
           
-          {/* 1. Station Overview Skeleton (Map on left, Gauge + Alerts on right) */}
+          {/* 1. Station Overview Skeleton */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
             <div className="h-[530px] w-full">
                 <Skeleton className="h-full w-full rounded-xl" />
@@ -71,7 +100,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* 2. Pillar Cards Skeleton (4 metrics) */}
+          {/* 2. Pillar Cards Skeleton */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {[1, 2, 3, 4].map(i => (
                 <div key={i} className="h-[130px] w-full">
@@ -80,7 +109,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* 3. Trend Charts Skeleton (3 charts) */}
+          {/* 3. Trend Charts Skeleton */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
             {[1, 2, 3].map(i => (
                 <div key={i} className="h-[300px] w-full">
@@ -102,16 +131,13 @@ export default function Dashboard() {
 
   // =========================================================================
   // DYNAMIC HEALTH ENGINE
-  // Calculates real-time health based on live telemetry anomalies
   // =========================================================================
   const calculateStationHealth = () => {
-    // Start with base scores
     let infraScore = infra?.system_health_score ?? 100;
     let energyScore = energy?.system_health_score ?? 100;
     let envScore = env?.system_health_score ?? 100;
     let logScore = logistics?.system_health_score ?? 100;
 
-    // Apply Live Penalties based on JSON Schema
     if (energy?.power_distribution?.net_power_deficit_kw < 0) energyScore -= 15;
     if (energy?.battery_system?.current_charge_percent < 30) energyScore -= 10;
     if (env?.exterior_conditions?.temperature?.alerts?.is_warning_cold) envScore -= 5;
@@ -119,22 +145,18 @@ export default function Dashboard() {
     if (infra?.structural_health?.snow_load_on_roof_kg > 20000) infraScore -= 10;
     if (logistics?.supplies?.food?.current_stock_days < 30) logScore -= 10;
 
-    // Clamp scores between 0 and 100 so bars don't overflow
     const clamp = (val) => Math.max(0, Math.min(100, val));
     const cInfra = clamp(infraScore);
     const cEnergy = clamp(energyScore);
     const cEnv = clamp(envScore);
     const cLog = clamp(logScore);
     
-    // Final aggregate score
     const finalScore = Math.round((cInfra + cEnergy + cEnv + cLog) / 4);
 
-    // Determine overall trend
     let trend = "stable";
     if (finalScore < 75) trend = "deteriorating";
     else if (finalScore > 90) trend = "improving";
 
-    // Generate the breakdown array for the progress bars
     const breakdown = [
       { label: "Energy", value: cEnergy, status: cEnergy > 80 ? "ok" : cEnergy > 50 ? "warn" : "danger" },
       { label: "Infra", value: cInfra, status: cInfra > 80 ? "ok" : cInfra > 50 ? "warn" : "danger" },
@@ -142,7 +164,6 @@ export default function Dashboard() {
       { label: "Logistics", value: cLog, status: cLog > 80 ? "ok" : cLog > 50 ? "warn" : "danger" }
     ];
 
-    // Return the full object, now including the breakdown!
     return { value: finalScore, score: finalScore, trend, breakdown };
   };
 
@@ -151,7 +172,6 @@ export default function Dashboard() {
   // =========================================================================
   // DASHBOARD DATA AGGREGATION
   // =========================================================================
-  
   const allAlerts = [
     ...(infra?.alerts_local || []),
     ...(energy?.interconnections?.critical_alert ? [{ severity: energy.interconnections.severity.toLowerCase(), message: energy.interconnections.alert_description }] : []),
@@ -161,6 +181,9 @@ export default function Dashboard() {
 
   const isPowerDeficit = energy?.power_distribution?.net_power_deficit_kw < 0;
   
+  // Helper to ensure numbers don't crash if undefined
+  const formatMetric = (val) => Number(val || 0).toFixed(1);
+
   const pillars = [
     {
       id: "infra",
@@ -169,8 +192,9 @@ export default function Dashboard() {
       icon: ShieldCheck,
       link: "/infrastructure",
       metrics: [
-        { label: "Integrity", value: `${infra?.structural_health?.structural_integrity_percent ?? 0}%`, icon: Activity },
-        { label: "Snow Load", value: `${((infra?.structural_health?.snow_load_on_roof_kg ?? 0) / 1000).toFixed(1)}t`, icon: Box }
+        { label: "Integrity", value: `${formatMetric(infra?.structural_health?.structural_integrity_percent)}%`, icon: Activity },
+        // Snow load is in thousands, so we divide by 1000 then format to 1 decimal
+        { label: "Snow Load", value: `${formatMetric((infra?.structural_health?.snow_load_on_roof_kg ?? 0) / 1000)}t`, icon: Box }
       ]
     },
     {
@@ -180,8 +204,8 @@ export default function Dashboard() {
       icon: Zap,
       link: "/energypower",
       metrics: [
-        { label: "Load", value: `${energy?.power_distribution?.total_load_kw ?? 0} kW`, icon: Zap },
-        { label: "Battery", value: `${energy?.battery_system?.current_charge_percent ?? 0}%`, icon: Battery }
+        { label: "Load", value: `${formatMetric(energy?.power_distribution?.total_load_kw)} kW`, icon: Zap },
+        { label: "Battery", value: `${formatMetric(energy?.battery_system?.current_charge_percent)}%`, icon: Battery }
       ]
     },
     {
@@ -191,8 +215,8 @@ export default function Dashboard() {
       icon: Thermometer,
       link: "/environment",
       metrics: [
-        { label: "Ext Temp", value: `${env?.exterior_conditions?.temperature?.outside_temperature_c ?? 0}°C`, icon: Thermometer },
-        { label: "Wind", value: `${env?.exterior_conditions?.wind?.wind_speed_kmh ?? 0} km/h`, icon: Wind }
+        { label: "Ext Temp", value: `${formatMetric(env?.exterior_conditions?.temperature?.outside_temperature_c)}°C`, icon: Thermometer },
+        { label: "Wind", value: `${formatMetric(env?.exterior_conditions?.wind?.wind_speed_kmh)} km/h`, icon: Wind }
       ]
     },
     {
@@ -202,8 +226,9 @@ export default function Dashboard() {
       icon: Box,
       link: "/logistics",
       metrics: [
-        { label: "Food", value: `${logistics?.supplies?.food?.current_stock_days ?? 0} Days`, icon: Box },
-        { label: "Fuel Res.", value: `${logistics?.fuel_reserves?.reserve_status_percent ?? 0}%`, icon: Droplet }
+        // Days and Percentages usually look better as whole numbers, so we use toFixed(0) here
+        { label: "Food", value: `${Number(logistics?.supplies?.food?.current_stock_days || 0).toFixed(0)} Days`, icon: Box },
+        { label: "Fuel Res.", value: `${Number(logistics?.fuel_reserves?.reserve_status_percent || 0).toFixed(0)}%`, icon: Droplet }
       ]
     }
   ];
