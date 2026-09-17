@@ -13,33 +13,33 @@ export default function Login({ onSwitchMode, onForgotClick }) {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const handleLogin = async (e) => {
+const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Using the centralized API client
             const data = await authAPI.login({
                 email: identifier.includes('@') ? identifier : undefined,
                 username: !identifier.includes('@') ? identifier : undefined,
                 password
             });
 
-            // Save user session for ProtectedRoute and Header
+            const user = data.data.user;
+
+            // Save complete user session for ProtectedRoute, Header, and Profile
             localStorage.setItem("polar_twin_user", JSON.stringify({
-                fullName: data.data.user.fullName,
-                email: data.data.user.email,
-                role: data.data.user.role || "station_master",
-                avatar: data.data.user.avatar
+                fullName: user.fullName,
+                username: user.username,
+                email: user.email,
+                role: user.role || "station_master",
+                station: user.station || null,
+                avatar: user.avatar || "",
+                createdAt: user.createdAt || new Date().toISOString()
             }));
 
-            // Trigger the success toast notification (Personalized)
-            showToast(`Clearance verified. Welcome back, ${data.data.user.fullName}.`, "success");
-
-            // Navigate to dashboard
+            showToast(`Clearance verified. Welcome back, ${user.fullName}.`, "success");
             navigate("/dashboard", { replace: true });
         } catch (error) {
             console.error(error);
-            // Replace ugly browser alert with our themed error toast
             showToast(error.message || "Authentication failed. Please check your credentials.", "error"); 
         } finally {
             setLoading(false);

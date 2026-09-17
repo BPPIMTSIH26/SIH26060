@@ -1,5 +1,10 @@
 import { CloudLightning, Sun, ShieldAlert } from "lucide-react";
 
+const formatMetric = (val, decimals = 1) => {
+  if (val === undefined || val === null || isNaN(val)) return "0";
+  return Number(val).toFixed(decimals);
+};
+
 export default function WeatherForecast({ environmentJson }) {
   if (!environmentJson || !environmentJson.interconnections_with_other_systems) return null;
 
@@ -43,7 +48,7 @@ export default function WeatherForecast({ environmentJson }) {
           <div>
             <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Solar Array Efficiency</p>
             <p className="font-mono text-[0.65rem] font-semibold text-slate-500 dark:text-slate-400 mt-1">
-              {solar_conditions?.solar_radiation_w_m2} W/m² ({solar_conditions?.solar_panel_efficiency_percent}% Efficiency)
+              {formatMetric(solar_conditions?.solar_radiation_w_m2, 1)} W/m² ({formatMetric(solar_conditions?.solar_panel_efficiency_percent, 0)}% Efficiency)
             </p>
           </div>
         </div>

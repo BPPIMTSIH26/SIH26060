@@ -12,6 +12,12 @@ import WeatherForecast from "./components/WeatherForecast";
 import SnowAndAtmosphere from "./components/SnowAndAtmosphere";
 import EmergencyScenarios from "./components/EmergencyScenarios";
 
+// --- NEW HELPER: Safely clamp floating point numbers ---
+const formatMetric = (val, decimals = 1) => {
+  if (val === undefined || val === null || isNaN(val)) return "0";
+  return Number(val).toFixed(decimals);
+};
+
 export default function Environment() {
   const { activeStation = "Maitri" } = useOutletContext() || {};
   
@@ -20,38 +26,53 @@ export default function Environment() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchEnv = async () => {
-      setLoading(true);
+    const abortController = new AbortController();
+
+    const fetchEnv = async (isBackgroundRefresh = false) => {
+      if (!isBackgroundRefresh) {
+        setLoading(true);
+      }
       setError(null);
       try {
-        const res = await environmentAPI.getStationEnvironment(activeStation);
-        if (isMounted) setData(res.data);
+        const res = await environmentAPI.getStationEnvironment(activeStation, { signal: abortController.signal });
+        if (abortController.signal.aborted) return;
+        setData(res.data);
       } catch (err) {
-        if (isMounted) setError(err.message);
+        if (!abortController.signal.aborted && !isBackgroundRefresh) {
+          setError(err.message || "Failed to fetch environment data.");
+        }
       } finally {
-        if (isMounted) setLoading(false);
+        if (!abortController.signal.aborted) setLoading(false);
       }
     };
-    fetchEnv();
-    return () => { isMounted = false; };
+
+    // 1. Fetch immediately
+    fetchEnv(false);
+
+    // 2. Silent 30-second polling
+    const intervalId = setInterval(() => {
+      fetchEnv(true);
+    }, 30000);
+
+    return () => { 
+      clearInterval(intervalId);
+      abortController.abort(); 
+    };
   }, [activeStation]);
 
   // =========================================================================
   // OPTIMIZED SKELETON LOADING STATE
-  // Matches mobile & desktop responsive behavior exactly for all 4 rows
   // =========================================================================
   if (loading) {
     return (
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950 font-sans">
-        
         {/* Header Skeleton */}
         <div className="mb-2 space-y-2">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-4 w-96 max-w-full" />
         </div>
         
-        {/* Row 1: KPI Grid Skeleton (Perfectly matches 2x2 mobile scaling) */}
+        {/* Row 1: KPI Grid Skeleton */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-3.5 sm:p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-900/40">
@@ -134,35 +155,32 @@ export default function Environment() {
   // =========================================================================
   // DATA MAPPING
   // =========================================================================
-  const ext = data.exterior_conditions;
+const ext = data.exterior_conditions;
 
   const kpis = [
-    { label: "External Temp", value: `${ext?.temperature?.outside_temperature_c}°C`, status: ext?.temperature?.alerts?.is_warning_cold ? "warn" : "ok", icon: Thermometer },
-    { label: "Wind Speed", value: `${ext?.wind?.wind_speed_kmh} km/h`, status: ext?.wind?.alerts?.is_warning_wind ? "warn" : "ok", icon: Wind },
-    { label: "Visibility", value: `${(ext?.visibility?.visibility_meters / 1000).toFixed(1)} km`, status: ext?.visibility?.alerts?.is_whiteout ? "danger" : "ok", icon: Eye },
-    { label: "UV Index", value: `${data.weather_phenomena?.atmospheric?.uv_index}`, status: "ok", icon: Sun },
+    { label: "External Temp", value: `${formatMetric(ext?.temperature?.outside_temperature_c)}°C`, status: ext?.temperature?.alerts?.is_warning_cold ? "warn" : "ok", icon: Thermometer },
+    { label: "Wind Speed", value: `${formatMetric(ext?.wind?.wind_speed_kmh)} km/h`, status: ext?.wind?.alerts?.is_warning_wind ? "warn" : "ok", icon: Wind },
+    { label: "Visibility", value: `${formatMetric((ext?.visibility?.visibility_meters || 0) / 1000)} km`, status: ext?.visibility?.alerts?.is_whiteout ? "danger" : "ok", icon: Eye },
+    { label: "UV Index", value: `${formatMetric(data.weather_phenomena?.atmospheric?.uv_index, 0)}`, status: "ok", icon: Sun },
   ];
 
   const sensors = [
-    { id: "ENV-MET-01", type: "Anemometer", location: "Main Mast", reading: `${ext?.wind?.wind_speed_kmh} km/h`, status: ext?.wind?.alerts?.is_warning_wind ? "warn" : "ok" },
-    { id: "ENV-BAR-02", type: "Barometer", location: "Exterior Wall", reading: `${data.weather_phenomena?.atmospheric?.atmospheric_pressure_mb} hPa`, status: "ok" },
-    { id: "ENV-THM-01", type: "Thermistor Array", location: "Ice Shelf", reading: `${ext?.temperature?.outside_temperature_c}°C`, status: ext?.temperature?.alerts?.is_warning_cold ? "warn" : "ok" },
-    { id: "ENV-RAD-01", type: "Radiometer", location: "Roof Deck", reading: `${data.solar_conditions?.solar_radiation_w_m2} W/m²`, status: "ok" },
+    { id: "ENV-MET-01", type: "Anemometer", location: "Main Mast", reading: `${formatMetric(ext?.wind?.wind_speed_kmh)} km/h`, status: ext?.wind?.alerts?.is_warning_wind ? "warn" : "ok" },
+    { id: "ENV-BAR-02", type: "Barometer", location: "Exterior Wall", reading: `${formatMetric(data.weather_phenomena?.atmospheric?.atmospheric_pressure_mb)} hPa`, status: "ok" },
+    { id: "ENV-THM-01", type: "Thermistor Array", location: "Ice Shelf", reading: `${formatMetric(ext?.temperature?.outside_temperature_c)}°C`, status: ext?.temperature?.alerts?.is_warning_cold ? "warn" : "ok" },
+    { id: "ENV-RAD-01", type: "Radiometer", location: "Roof Deck", reading: `${formatMetric(data.solar_conditions?.solar_radiation_w_m2)} W/m²`, status: "ok" },
   ];
 
-  const baseTemp = ext?.temperature?.outside_temperature_c ?? -35;
-  const tempTrend = ext?.temperature?.temperature_rate_of_change_c_per_hour ?? 0;
-  const temperatureSeries = Array.from({ length: 7 }).map((_, i) => ({
-    time: `-${(6 - i) * 4}h`,
-    ext: Number((baseTemp - (tempTrend * (6 - i) * 4)).toFixed(1)),
-    int: 21 
+  // Directly pulling the live chart arrays from the backend!
+  const temperatureSeries = data.temperature_history || [];
+
+  // Map the raw numbers from the backend to the strings the UI components expect
+  const airQuality = (data.air_quality || []).map(aq => ({
+    zone: aq.zone,
+    co2: `${formatMetric(aq.co2_ppm, 0)} ppm`,
+    o2: `${formatMetric(aq.o2_percent, 1)}%`,
+    status: aq.status
   }));
-
-  const airQuality = [
-    { zone: "Living Quarters", co2: "410 ppm", o2: "21.0%", status: "ok" },
-    { zone: "Research Lab", co2: "415 ppm", o2: "21.0%", status: "ok" },
-    { zone: "Storage Bay", co2: "440 ppm", o2: "20.9%", status: "ok" },
-  ];
 
   return (
     <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950 font-sans">
@@ -175,16 +193,13 @@ export default function Environment() {
         </p>
       </div>
 
-      {/* Row 1: KPI Grid */}
       <EnvKpiGrid kpis={kpis} />
 
-      {/* Row 2: Charts and Internal AQI (2/3 and 1/3 split) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <TemperatureChart temperatureSeries={temperatureSeries} />
         <AirQualityList airQuality={airQuality} />
       </div>
 
-      {/* Row 3: Sensors and Glaciology (2/3 and 1/3 split) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2 flex flex-col">
           <SensorTable sensors={sensors} />
@@ -194,12 +209,10 @@ export default function Environment() {
         </div>
       </div>
 
-      {/* Row 4: Weather Forecasting and Emergency Protocols */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <WeatherForecast environmentJson={data} />
         <EmergencyScenarios environmentJson={data} />
       </div>
-      
     </div>
   );
 }

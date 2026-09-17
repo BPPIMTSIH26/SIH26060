@@ -19,7 +19,6 @@ export function StationOverview({ activeStation, modules = [], health = {}, aler
         <HealthGauge health={health} />
         <AlertsList alerts={alerts} />
       </div>
-
     </section>
   );
 }

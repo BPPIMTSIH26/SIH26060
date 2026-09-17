@@ -14,6 +14,12 @@ import FuelSystem from "./components/FuelSystem";
 import PowerDistribution from "./components/PowerDistribution";
 import { useGlobalAlert } from "../../components/context/Alerts/GlobalAlertContext";
 
+// --- NEW HELPER: Safely clamp floating point numbers ---
+const formatMetric = (val, decimals = 1) => {
+  if (val === undefined || val === null || isNaN(val)) return "0";
+  return Number(val).toFixed(decimals);
+};
+
 export default function Energy() {
   const { activeStation = "Maitri" } = useOutletContext() || {};
   
@@ -24,43 +30,54 @@ export default function Energy() {
   const { pushAlert } = useGlobalAlert();
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchEnergy = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await energyAPI.getStationEnergy(activeStation);
-        if (isMounted) {
-          const energyData = res.data;
-          setData(energyData);
+    const abortController = new AbortController();
 
-          // Automated Global Alert Push if Power Deficit is Active
-          const deficit = energyData?.power_distribution?.net_power_deficit_kw ?? 0;
-          if (deficit < 0) {
-            pushAlert({
-              alert_id: `AUTO-DEFICIT-${activeStation}`,
-              severity: "CRITICAL",
-              message: `⚠️ POWER DEFICIT: Generation (${energyData.power_distribution.total_generation_kw} kW) < Load (${energyData.power_distribution.total_load_kw} kW).`,
-              affected_systems: ["energy", "battery_backup"],
-              current_state: energyData.power_distribution,
-              recommended_actions: ["Activate Generator 2", "Shed non-essential loads"]
-            });
-          }
+    const fetchEnergy = async (isBackgroundRefresh = false) => {
+      if (!isBackgroundRefresh) setLoading(true);
+      setError(null);
+      
+      try {
+        const res = await energyAPI.getStationEnergy(activeStation, { signal: abortController.signal });
+        if (abortController.signal.aborted) return;
+        
+        const energyData = res.data;
+        setData(energyData);
+
+        // Automated Global Alert Push if Power Deficit is Active
+        const deficit = energyData?.power_distribution?.net_power_deficit_kw ?? 0;
+        if (deficit < 0) {
+          pushAlert({
+            alert_id: `AUTO-DEFICIT-${activeStation}`,
+            severity: "CRITICAL",
+            message: `⚠️ POWER DEFICIT: Generation (${formatMetric(energyData.power_distribution.total_generation_kw, 1)} kW) < Load (${formatMetric(energyData.power_distribution.total_load_kw, 1)} kW).`,
+            affected_systems: ["energy", "battery_backup"],
+            current_state: energyData.power_distribution,
+            recommended_actions: ["Activate Generator 2", "Shed non-essential loads"]
+          });
         }
       } catch (err) {
-        if (isMounted) setError(err.message);
+        if (!abortController.signal.aborted && !isBackgroundRefresh) setError(err.message);
       } finally {
-        if (isMounted) setLoading(false);
+        if (!abortController.signal.aborted) setLoading(false);
       }
     };
 
-    fetchEnergy();
-    return () => { isMounted = false; };
+    // 1. Fetch immediately
+    fetchEnergy(false);
+
+    // 2. Silent 30-second polling loop
+    const intervalId = setInterval(() => {
+      fetchEnergy(true);
+    }, 30000);
+
+    return () => { 
+      clearInterval(intervalId);
+      abortController.abort(); 
+    };
   }, [activeStation, pushAlert]);
 
   // =========================================================================
   // OPTIMIZED SKELETON LOADING STATE
-  // Matches mobile & desktop responsive behavior exactly for all 4 rows
   // =========================================================================
   if (loading) {
     return (
@@ -72,7 +89,7 @@ export default function Energy() {
           <Skeleton className="h-4 w-96 max-w-full" />
         </div>
         
-        {/* Row 1: KPI Grid Skeleton (Perfectly matches 2x2 mobile scaling) */}
+        {/* Row 1: KPI Grid Skeleton */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-3.5 sm:p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-900/40">
@@ -153,43 +170,43 @@ export default function Energy() {
   }
 
   // =========================================================================
-  // DATA MAPPING (100% JSON Utilization)
+  // DATA MAPPING (Clamped Floating Points!)
   // =========================================================================
   const pwr = data.power_distribution || {};
   const isDeficit = (pwr.net_power_deficit_kw ?? 0) < 0;
 
   const kpis = [
-    { label: "System Health", value: `${data.system_health_score ?? 100}%`, subtext: `Trend: ${data.system_health_trend ?? 'stable'}`, status: (data.system_health_score ?? 100) > 80 ? "ok" : "warn", icon: Zap },
-    { label: "Total Generation", value: `${pwr.total_generation_kw ?? 0} kW`, status: isDeficit ? "danger" : "ok", icon: Flame },
-    { label: "Total Load", value: `${pwr.total_load_kw ?? 0} kW`, status: isDeficit ? "danger" : "ok", icon: ZapOff },
-    { label: "Battery Status", value: `${data.battery_system?.current_charge_percent ?? 0}%`, status: (data.battery_system?.current_charge_percent ?? 0) > 30 ? "ok" : "danger", icon: Battery },
+    { label: "System Health", value: `${formatMetric(data.system_health_score, 0)}%`, subtext: `Trend: ${data.system_health_trend ?? 'stable'}`, status: (data.system_health_score ?? 100) > 80 ? "ok" : "warn", icon: Zap },
+    { label: "Total Generation", value: `${formatMetric(pwr.total_generation_kw, 1)} kW`, status: isDeficit ? "danger" : "ok", icon: Flame },
+    { label: "Total Load", value: `${formatMetric(pwr.total_load_kw, 1)} kW`, status: isDeficit ? "danger" : "ok", icon: ZapOff },
+    { label: "Battery Status", value: `${formatMetric(data.battery_system?.current_charge_percent, 0)}%`, status: (data.battery_system?.current_charge_percent ?? 0) > 30 ? "ok" : "danger", icon: Battery },
   ];
 
   const sources = [
     { 
       id: data.generators?.gen_1?.generator_id || "GEN-001", 
       type: "Diesel Primary", 
-      output: data.generators?.gen_1?.operation?.power_output_kw ?? 0, 
-      maxOutput: data.generators?.gen_1?.thresholds?.power_output_max_kw ?? 250,
-      efficiency: `${data.generators?.gen_1?.operation?.fuel_consumption_liters_per_hour ?? 0} L/h`, 
+      output: formatMetric(data.generators?.gen_1?.operation?.power_output_kw, 1), 
+      maxOutput: formatMetric(data.generators?.gen_1?.thresholds?.power_output_max_kw, 0),
+      efficiency: `${formatMetric(data.generators?.gen_1?.operation?.fuel_consumption_liters_per_hour, 1)} L/h`, 
       status: data.generators?.gen_1?.status ?? "ACTIVE",
-      runtime: data.generators?.gen_1?.operation?.runtime_total_hours ?? 0,
-      maintDue: data.generators?.gen_1?.thresholds?.maintenance_due_hours ?? 0
+      runtime: formatMetric(data.generators?.gen_1?.operation?.runtime_total_hours, 0),
+      maintDue: formatMetric(data.generators?.gen_1?.thresholds?.maintenance_due_hours, 0)
     },
     { 
       id: data.generators?.gen_2?.generator_id || "GEN-002", 
       type: "Diesel Backup", 
-      output: data.generators?.gen_2?.operation?.power_output_kw ?? 0, 
-      maxOutput: data.generators?.gen_2?.thresholds?.power_output_max_kw ?? 250,
+      output: formatMetric(data.generators?.gen_2?.operation?.power_output_kw, 1), 
+      maxOutput: formatMetric(data.generators?.gen_2?.thresholds?.power_output_max_kw, 0),
       efficiency: "Standby", 
       status: data.generators?.gen_2?.status ?? "STANDBY",
-      runtime: data.generators?.gen_2?.operation?.runtime_total_hours ?? 0,
-      maintDue: data.generators?.gen_2?.thresholds?.maintenance_due_hours ?? 0
+      runtime: formatMetric(data.generators?.gen_2?.operation?.runtime_total_hours, 0),
+      maintDue: formatMetric(data.generators?.gen_2?.thresholds?.maintenance_due_hours, 0)
     },
     { 
       id: data.renewable_energy?.solar_panels?.system_id || "SOLAR-001", 
       type: "Solar Array", 
-      output: data.renewable_energy?.solar_panels?.current_output_kw ?? 0, 
+      output: formatMetric(data.renewable_energy?.solar_panels?.current_output_kw, 1), 
       efficiency: "Weather Dep.", 
       status: data.renewable_energy?.solar_panels?.status?.toUpperCase() ?? "OPERATIONAL"
     },
@@ -197,19 +214,19 @@ export default function Energy() {
 
   const batteries = [{
     id: data.battery_system?.battery_bank_id || "BATT-01",
-    charge: data.battery_system?.current_charge_percent ?? 0,
+    charge: formatMetric(data.battery_system?.current_charge_percent, 0),
     status: isDeficit ? "warn" : "ok",
-    infoLeft: isDeficit ? `Draining: ${data.battery_system?.performance?.discharging_rate_kw ?? 0} kW` : "Charging",
-    infoRight: `Est. Backup: ${data.battery_system?.performance?.estimated_backup_hours_at_current_load ?? 0} hrs`,
-    kwhText: `${data.battery_system?.current_charge_kwh ?? 0} / ${data.battery_system?.total_capacity_kwh ?? 0} kWh`,
-    efficiency: data.battery_system?.performance?.efficiency_percent ?? 0,
+    infoLeft: isDeficit ? `Draining: ${formatMetric(data.battery_system?.performance?.discharging_rate_kw, 1)} kW` : "Charging",
+    infoRight: `Est. Backup: ${formatMetric(data.battery_system?.performance?.estimated_backup_hours_at_current_load, 1)} hrs`,
+    kwhText: `${formatMetric(data.battery_system?.current_charge_kwh, 0)} / ${formatMetric(data.battery_system?.total_capacity_kwh, 0)} kWh`,
+    efficiency: formatMetric(data.battery_system?.performance?.efficiency_percent, 0),
     trend: data.battery_system?.charge_trend ?? "stable"
   }];
 
   const powerSeries = Array.from({ length: 7 }).map((_, i) => ({
     time: `-${(6 - i) * 4}h`,
-    gen: i === 6 ? (pwr.total_generation_kw ?? 200) : 200 + Math.random() * 20,
-    load: i === 6 ? (pwr.total_load_kw ?? 180) : 190 + Math.random() * 30
+    gen: i === 6 ? Number(formatMetric(pwr.total_generation_kw, 1)) : Number(formatMetric(200 + Math.random() * 20, 1)),
+    load: i === 6 ? Number(formatMetric(pwr.total_load_kw, 1)) : Number(formatMetric(190 + Math.random() * 30, 1))
   }));
 
   return (

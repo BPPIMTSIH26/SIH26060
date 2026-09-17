@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { PackagePlus, PackageCheck } from "lucide-react";
 import CustomDropdown from "../../../components/context/CustomDropdown";
 
@@ -19,7 +19,7 @@ export function OrderForm({ onSubmit, role }) {
     const categoryOptions = [
         { label: "Mechanical/Parts", value: "Mechanical" },
         { label: "Medical Supplies", value: "Medical" },
-        { label: "Food/Rations", value: "Rations" },
+        { label: "Food/Rations", value: "Food" },
         { label: "Scientific Gear", value: "Scientific" },
         { label: "Fuel/Consumables", value: "Fuel" }
     ];

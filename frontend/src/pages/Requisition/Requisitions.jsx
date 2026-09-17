@@ -1,3 +1,4 @@
+/* eslint-disable no-empty */
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from "react";
@@ -19,10 +20,8 @@ export default function Requisitions() {
     const [error, setError] = useState(null);
     
     const [user, setUser] = useState({ fullName: "Operator", role: "station_master" });
-    
-    // Search and Filtering State
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeTab, setActiveTab] = useState("active"); // "active" | "history"
+    const [activeTab, setActiveTab] = useState("active");
 
     const formatRole = (roleString) => {
         if (!roleString) return "";
@@ -32,81 +31,75 @@ export default function Requisitions() {
     useEffect(() => {
         const storedUser = localStorage.getItem("polar_twin_user");
         if (storedUser && storedUser !== "undefined") {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (err) {
-                console.error("Session parse error");
-            }
+            try { setUser(JSON.parse(storedUser)); } catch (err) {}
         }
     }, []);
 
+    // 1. Fetch Real Data
     useEffect(() => {
-        let isMounted = true;
+        const abortController = new AbortController();
         const fetchShopData = async () => {
             setLoading(true);
             setError(null);
             try {
-                const savedDB = localStorage.getItem(`polar_twin_requests_${activeStation}`);
-                if (savedDB) {
-                    if (isMounted) setRequests(JSON.parse(savedDB));
-                } else {
-                    const res = await shopAPI.getRequisitions(activeStation);
-                    if (isMounted) {
-                        setRequests(res.data.requisitions);
-                        localStorage.setItem(`polar_twin_requests_${activeStation}`, JSON.stringify(res.data.requisitions));
-                    }
-                }
+                const res = await shopAPI.getRequisitions(activeStation, { signal: abortController.signal });
+                setRequests(res.data.requisitions);
             } catch (err) {
-                if (isMounted) setError(err.message);
+                if (!abortController.signal.aborted) setError(err.message);
             } finally {
-                if (isMounted) setLoading(false);
+                if (!abortController.signal.aborted) setLoading(false);
             }
         };
         fetchShopData();
-        return () => { isMounted = false; };
+        return () => abortController.abort();
     }, [activeStation]);
 
-    useEffect(() => {
-        if (!loading && requests.length > 0) {
-            localStorage.setItem(`polar_twin_requests_${activeStation}`, JSON.stringify(requests));
+    // 2. Create Real Order
+    const handleCreateRequest = async (newItem) => {
+        try {
+            const res = await shopAPI.createOrder(activeStation, newItem);
+            setRequests([res.data, ...requests]); // Insert new formatted order into UI
+            showToast(res.message, "success");
+        } catch (err) {
+            showToast(err.message, "error");
         }
-    }, [requests, activeStation, loading]);
-
-    const handleCreateRequest = (newItem) => {
-        const isAuthority = user.role === "authority";
-        const newReq = {
-            id: `REQ-${Math.floor(Math.random() * 900) + 100}`,
-            item: newItem.item,
-            qty: newItem.qty,
-            priority: newItem.priority,
-            category: newItem.category,
-            notes: newItem.notes,      
-            status: isAuthority ? "APPROVED" : "PENDING",
-            requestedBy: user.fullName,
-            requestDate: new Date().toISOString()
-        };
-        
-        setRequests([newReq, ...requests]);
-        showToast(
-            isAuthority ? "Priority order authorized and deployed to logistics." : "Requisition submitted for authority approval.",
-            "success"
-        );
     };
 
-    const handleUpdateStatus = (id, newStatus, extraData = {}) => {
-        setRequests(requests.map(req => {
-            if (req.id === id) {
-                const updatedReq = { ...req, status: newStatus, ...extraData };
-                if (newStatus === "APPROVED" || newStatus === "REJECTED") updatedReq.approvedBy = user.fullName; 
-                if (newStatus === "SHIPPED" || newStatus === "DELIVERED") updatedReq.handledBy = user.fullName; 
-                return updatedReq;
+    // 3. Execute State Machine Updates
+    const handleUpdateStatus = async (id, newStatus, extraData = {}) => {
+        try {
+            let res;
+            if (newStatus === "APPROVED") {
+                res = await shopAPI.reviewOrder(activeStation, id, { action: 'approve' });
+            } else if (newStatus === "REJECTED") {
+                res = await shopAPI.reviewOrder(activeStation, id, { action: 'reject', rejectionReason: extraData.rejectReason });
+            } else if (newStatus === "SHIPPED") {
+                res = await shopAPI.deliverOrder(activeStation, id, { status: 'IN_TRANSIT', estimatedDeliveryDays: extraData.etaDays });
+            } else if (newStatus === "DELIVERED") {
+                res = await shopAPI.deliverOrder(activeStation, id, { status: 'DELIVERED' });
             }
-            return req;
-        }));
-        showToast(`Request ${id} updated to ${newStatus}.`, "info");
+
+            // Update UI with the returned, verified backend data
+            setRequests(requests.map(req => req.id === id ? res.data : req));
+            showToast(res.message, "success");
+        } catch (err) {
+            showToast(err.message, "error");
+        }
     };
 
-    // FILTER LOGIC
+    // 4. Handle Direct Inventory Add
+    const handleDirectEntry = async (itemData) => {
+        try {
+            const res = await shopAPI.directEntry(activeStation, itemData);
+            showToast(res.message, "success");
+            // Optionally re-fetch orders here if you want direct logs to show in the UI list
+            const updated = await shopAPI.getRequisitions(activeStation);
+            setRequests(updated.data.requisitions);
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    };
+
     const filteredRequests = requests.filter(req => {
         const matchesSearch = 
             req.item.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -203,13 +196,10 @@ export default function Requisitions() {
                     )}
 
                     {user.role === "logistics" && (
-                        <div className="lg:col-span-1">
-                            <DirectInventoryForm onAdd={(item) => {
-                                setRequests([{ id: `INV-${Math.floor(Math.random() * 900) + 100}`, ...item, status: "DELIVERED", requestedBy: "Logistics Direct" }, ...requests]);
-                                showToast("Inventory explicitly added to local stock.", "success");
-                            }} />
-                        </div>
-                    )}
+    <div className="lg:col-span-1">
+        <DirectInventoryForm onAdd={handleDirectEntry} />
+    </div>
+)}
 
                     {/* RIGHT COLUMN: Queues */}
                     <div className="lg:col-span-2 flex flex-col gap-4">
@@ -242,33 +232,39 @@ export default function Requisitions() {
                             </div>
                         </div>
 
-                        {/* QUEUE RENDERERS (Receiving pre-filtered data) */}
-                        {user.role === "station_master" && (
-                            <StationMasterQueue requests={filteredRequests.filter(r => r.requestedBy === user.fullName)} activeTab={activeTab} />
-                        )}
+                        {/* QUEUE RENDERERS */}
+{user.role === "station_master" && (
+    <StationMasterQueue 
+        requests={filteredRequests.filter(r => r.requestedBy === user.fullName)} 
+        activeTab={activeTab} 
+    />
+)}
 
-                        {user.role === "authority" && (
-                            <AuthorityQueue 
-                                pending={filteredRequests.filter(r => r.status === "PENDING")} 
-                                onUpdate={handleUpdateStatus} 
-                                activeTab={activeTab}
-                            />
-                        )}
+{user.role === "authority" && (
+    <AuthorityQueue 
+        // If history tab is active, show the history. Otherwise, only show PENDING.
+        pending={activeTab === "history" ? filteredRequests : filteredRequests.filter(r => r.status === "PENDING")} 
+        onUpdate={handleUpdateStatus} 
+        activeTab={activeTab}
+    />
+)}
 
-                        {user.role === "logistics" && (
-                            <LogisticsQueue 
-                                approved={filteredRequests.filter(r => r.status === "APPROVED" || r.status === "SHIPPED")} 
-                                onUpdate={handleUpdateStatus} 
-                                activeTab={activeTab}
-                            />
-                        )}
-                        
-                        {/* ONLY show Transit Board on 'active' tab */}
-                        {activeTab === "active" && (
-                            <ActiveTransitBoard 
-                                shipments={filteredRequests.filter(r => r.status === "APPROVED" || r.status === "SHIPPED")} 
-                            />
-                        )}
+{user.role === "logistics" && (
+    <LogisticsQueue 
+        approved={activeTab === "history" 
+            ? filteredRequests.filter(r => r.status !== "REJECTED") 
+            : filteredRequests.filter(r => r.status === "APPROVED" || r.status === "SHIPPED")} 
+        onUpdate={handleUpdateStatus} 
+        activeTab={activeTab}
+    />
+)}
+
+{/* ONLY show Transit Board on 'active' tab */}
+{activeTab === "active" && (
+    <ActiveTransitBoard 
+        shipments={filteredRequests.filter(r => r.status === "APPROVED" || r.status === "SHIPPED")} 
+    />
+)}
 
                     </div>
                 </div>

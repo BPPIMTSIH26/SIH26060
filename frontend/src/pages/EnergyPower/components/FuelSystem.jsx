@@ -1,5 +1,10 @@
 import { Fuel, ShieldCheck } from "lucide-react";
 
+const formatMetric = (val, decimals = 1) => {
+  if (val === undefined || val === null || isNaN(val)) return "0";
+  return Number(val).toFixed(decimals);
+};
+
 export default function FuelSystem({ energyJson }) {
   if (!energyJson || !energyJson.fuel_system) return null;
   const { primary_tank, emergency_reserve } = energyJson.fuel_system;
@@ -18,14 +23,14 @@ export default function FuelSystem({ energyJson }) {
               <Fuel className="h-4 w-4 text-cyan-500 shrink-0" />
               <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Primary Storage</span>
             </div>
-            <span className="font-mono text-[0.65rem] uppercase text-cyan-600 dark:text-cyan-500 font-bold">{primary_tank.days_until_empty} Days Left</span>
+            <span className="font-mono text-[0.65rem] uppercase text-cyan-600 dark:text-cyan-500 font-bold">{formatMetric(primary_tank.days_until_empty, 1)} Days Left</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-            <div className="h-full rounded-full bg-cyan-500" style={{ width: `${primary_tank.current_level_percent}%` }} />
+            <div className="h-full rounded-full bg-cyan-500" style={{ width: `${formatMetric(primary_tank.current_level_percent, 1)}%` }} />
           </div>
           <div className="flex justify-between font-mono text-[0.65rem] text-slate-500 dark:text-slate-400 mt-1">
-            <span>{primary_tank.current_level_liters.toLocaleString()} L</span>
-            <span>Burn: {primary_tank.consumption_rate_liters_per_day} L/day</span>
+            <span>{Number(formatMetric(primary_tank.current_level_liters, 0)).toLocaleString()} L</span>
+            <span>Burn: {formatMetric(primary_tank.consumption_rate_liters_per_day, 0)} L/day</span>
           </div>
         </div>
 

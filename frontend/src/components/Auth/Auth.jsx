@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom"; // NEW: Imported hooks for URL tracking
-import Login from "./Login";
-import Signup from "./Signup";
+import Login from "./login";
+import Signup from "./signup";
 import ForgotPassword from "./ForgotPassword";
 import Logo from "../../../public/Logo"; // Adjust path to your logo
 import ThemeToggle from "../context/ThemeToggle";

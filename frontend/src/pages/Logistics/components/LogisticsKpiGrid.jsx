@@ -1,6 +1,11 @@
 import { Activity, Package, Users, Droplet } from "lucide-react";
 
-// Internalized color maps
+// Helper to safely format numbers to 1 decimal place
+const formatMetric = (val, decimals = 1) => {
+  if (val === undefined || val === null || isNaN(val)) return "0";
+  return Number(val).toFixed(decimals);
+};
+
 const statusColors = { ok: "text-emerald-600 dark:text-emerald-500", warning: "text-amber-600 dark:text-amber-500", danger: "text-red-600 dark:text-red-500" };
 const bgColors = { ok: "bg-emerald-500/10", warning: "bg-amber-500/10", danger: "bg-red-500/10" };
 
@@ -8,10 +13,10 @@ export default function LogisticsKpiGrid({ logisticsJson }) {
   if (!logisticsJson) return null;
 
   const kpis = [
-    { label: "System Health", value: `${logisticsJson.system_health_score}%`, status: logisticsJson.system_health_score > 80 ? "ok" : "danger", icon: Activity },
-    { label: "Food Reserves", value: `${logisticsJson.supplies?.food?.current_stock_days} Days`, status: logisticsJson.supplies?.food?.status === "adequate" ? "ok" : "warning", icon: Package },
-    { label: "Active Personnel", value: logisticsJson.personnel?.on_station_count, status: "ok", icon: Users },
-    { label: "Fuel Status", value: logisticsJson.fuel_reserves?.reserve_status?.toUpperCase(), status: "ok", icon: Droplet },
+    { label: "System Health", value: `${formatMetric(logisticsJson.system_health_score, 1)}%`, status: logisticsJson.system_health_score > 80 ? "ok" : "danger", icon: Activity },
+    { label: "Food Reserves", value: `${formatMetric(logisticsJson.supplies?.food?.current_stock_days, 1)} Days`, status: logisticsJson.supplies?.food?.status === "adequate" ? "ok" : "warning", icon: Package },
+    { label: "Active Personnel", value: Math.round(logisticsJson.personnel?.on_station_count || 0), status: "ok", icon: Users },
+    { label: "Fuel Status", value: logisticsJson.fuel_reserves?.reserve_status?.toUpperCase() || "UNKNOWN", status: "ok", icon: Droplet },
   ];
 
   return (

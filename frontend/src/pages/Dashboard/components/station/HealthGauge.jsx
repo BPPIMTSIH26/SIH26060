@@ -49,7 +49,7 @@ export default function HealthGauge({ health = {} }) {
             <span className="font-mono text-3xl font-black tabular-nums tracking-tighter" style={{ color: gaugeColor }}>
               {value}
             </span>
-            <span className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-[0.50rem] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               {trend === "improving" ? "▲" : trend === "deteriorating" ? "▼" : "■"} {trend}
             </span>
           </div>

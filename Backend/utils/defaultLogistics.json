@@ -1,0 +1,23 @@
+{
+  "data_freshness_hours": 6,
+  "supplies": {
+    "food": { "item_id": "SUPPLY-FOOD-001", "current_stock_days": 45, "daily_consumption_kg": 85, "current_stock_kg": 3825, "max_capacity_kg": 5000, "storage_location": "storage_module", "thresholds": { "critical_low_days": 14, "warning_low_days": 30, "optimal_stock_days": 60 }, "status": "adequate", "status_color": "green", "consumption_forecast": { "estimated_depletion_date": "2026-09-18", "days_to_critical": 14, "recommendation": "Schedule resupply before 2026-09-10" } },
+    "medical": { "item_id": "SUPPLY-MEDICAL-001", "current_stock_percent": 87, "total_units": 450, "critical_items": [ { "item": "Antibiotics (Amoxicillin)", "stock_percent": 92, "status": "adequate" }, { "item": "Trauma kits", "stock_percent": 78, "status": "adequate" }, { "item": "Vaccines", "stock_percent": 100, "status": "adequate" } ], "thresholds": { "critical_low_percent": 20, "warning_low_percent": 40, "optimal_stock_percent": 80 }, "status": "adequate", "status_color": "green" },
+    "spare_parts": { "item_id": "SUPPLY-PARTS-001", "categories": { "generator_parts": { "fuel_filters": 12, "oil_filters": 15, "spark_plugs": 8, "status": "adequate" }, "hvac_components": { "air_filters": 20, "heating_elements": 3, "thermostat_units": 2, "status": "adequate" } }, "overall_status": "adequate", "status_color": "green" }
+  },
+  "fuel_reserves": {
+    "item_id": "SUPPLY-FUEL-001", "emergency_reserve_liters": 10000, "reserve_purpose": "48-hour emergency power for critical systems only", "reserve_status_percent": 100, "reserve_status": "full", "status_color": "green", "thresholds": { "critical_depletion_percent": 5, "warning_depletion_percent": 15 }
+  },
+  "personnel": {
+    "total_personnel": 12, "on_station_count": 12, "in_transit_count": 0, "field_teams_active": 1, "breakdown": { "scientists": 6, "technicians": 4, "medical_officer": 1, "station_leader": 1 },
+    "personnel_list": [ { "personnel_id": "P001", "name": "Dr. Rajesh Kumar", "role": "Station Leader", "location": "living_quarters", "status": "on_station" } ], "incoming_personnel": [], "departing_personnel": []
+  },
+  "shipments": {
+    "incoming": [ { "shipment_id": "SHIP-2026-AUG-001", "eta_date": "2026-09-01", "eta_days": 8, "shipment_status": "in_transit", "status_color": "blue", "priority": "high", "criticality": "Important for winter operations" } ],
+    "outgoing": [],
+    "logistics_forecast": { "days_until_critical_resupply_needed": 14, "next_critical_shipment_eta": "2026-09-01", "risk_assessment": "On track for winter operations" }
+  },
+  "active_requisitions": [],
+  "system_health_score": 92,
+  "overall_logistics_status": "healthy"
+}

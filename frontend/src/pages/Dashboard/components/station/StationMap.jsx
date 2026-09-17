@@ -14,6 +14,12 @@ const legendLabels = {
     operational: "Online", warning: "Warning", danger: "Critical", offline: "Offline"
 };
 
+// --- NEW HELPER: Safely formats numbers to 1 decimal place ---
+const formatVal = (val, decimals = 1) => {
+    if (val === undefined || val === null || isNaN(val)) return 0;
+    return Number(val).toFixed(decimals);
+};
+
 // ============================================================================
 // 3D MODEL COMPONENTS
 // ============================================================================
@@ -34,7 +40,6 @@ function ModelLoader() {
     );
 }
 
-// Preload both models so toggling is instant
 useGLTF.preload('/models/maitri.glb');
 useGLTF.preload('/models/bharati.glb');
 
@@ -65,13 +70,13 @@ export default function StationMap({ activeStation, modules = [], environment = 
     return (
         <div className="rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-4 sm:p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-950/60 flex flex-col transition-colors duration-300 font-sans">
             
-            {/* HEADER: Modern typography */}
+            {/* HEADER */}
             <div className="mb-3 sm:mb-4 flex items-center justify-between">
                 <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
                     {activeStation} Topology
                 </h3>
                 <span className="font-mono text-xs font-semibold text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/50 px-2.5 py-1 rounded-md border border-cyan-200/60 dark:border-cyan-800/50">
-                    EXT {outsideTemp}°C
+                    EXT {formatVal(outsideTemp, 1)}°C
                 </span>
             </div>
 
@@ -80,7 +85,6 @@ export default function StationMap({ activeStation, modules = [], environment = 
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:24px_24px] opacity-60 dark:opacity-30 z-0 pointer-events-none" />
                 
                 <div className="absolute inset-0 w-full h-full z-10">
-                    {/* OPTIMIZED 3D ENGINE: Auto-zoom (adjustCamera) + No Lag (shadows={false}, dpr capped) */}
                     <Canvas dpr={[1, 1.5]} camera={{ position: [10, 8, 10], fov: 45 }}>
                         <Suspense fallback={<ModelLoader />}>
                             <Stage environment="city" intensity={0.6} adjustCamera shadows={false}>
@@ -92,13 +96,16 @@ export default function StationMap({ activeStation, modules = [], environment = 
                 </div>
             </div>
 
-            {/* TELEMETRY DATA BLOCKS: Modern frosted cards */}
+            {/* TELEMETRY DATA BLOCKS */}
             <div className="mt-3 sm:mt-4 grid grid-cols-2 lg:grid-cols-2 2xl:grid-cols-4 gap-2.5 sm:gap-3">
                 {currentLayout.map((config, idx) => {
                     const m = modules.find(mod => mod.module_id === config.id);
                     const status = m?.status || "operational";
                     const clr = statusColor[status] || statusColor.ok;
-                    const temp = m?.thermal_management?.indoor_temperature_c || "Auto";
+                    
+                    // Format indoor temp safely
+                    const rawTemp = m?.thermal_management?.indoor_temperature_c;
+                    const temp = rawTemp !== undefined ? formatVal(rawTemp, 1) : "Auto";
 
                     return (
                         <div key={config.id || idx} className="bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-sm flex flex-col justify-between transition-colors overflow-hidden">
@@ -118,7 +125,6 @@ export default function StationMap({ activeStation, modules = [], environment = 
                                 </div>
                             </div>
                             
-                            {/* Inner metrics box: Divided styling */}
                             <div className="grid grid-cols-2 bg-white dark:bg-slate-950 rounded-lg border border-slate-200/60 dark:border-slate-800 divide-x divide-slate-200 dark:divide-slate-800 overflow-hidden">
                                 <div className="flex items-center justify-center gap-1 sm:gap-1.5 p-1.5 whitespace-nowrap overflow-hidden">
                                     <Thermometer className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -139,11 +145,11 @@ export default function StationMap({ activeStation, modules = [], environment = 
                 })}
             </div>
 
-            {/* FOOTER STATS & LEGEND: Modern pill tags */}
+            {/* FOOTER STATS & LEGEND */}
             <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-100/70 dark:bg-slate-900/70 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
                     <Navigation className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" style={{ transform: `rotate(${windDirection}deg)` }} />
-                    <span className="whitespace-nowrap font-sans">Wind {windDirection}° · {windSpeed} km/h</span>
+                    <span className="whitespace-nowrap font-sans">Wind {formatVal(windDirection, 0)}° · {formatVal(windSpeed, 1)} km/h</span>
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-100/70 dark:bg-slate-900/70 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
