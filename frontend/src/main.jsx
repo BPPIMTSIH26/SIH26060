@@ -10,6 +10,7 @@ import Logistics from './pages/Logistics/Logistics.jsx'
 import Environment from './pages/Environment/Environment.jsx'
 import Infrastructure from './pages/Infrastructure/Infrastructure.jsx'
 import EnergyPower from './pages/EnergyPower/EnergyPower.jsx'
+import Reports from './pages/Reports/Reports.jsx'
 import Profile from './pages/Profile/profile.jsx'
 import Auth from './components/Auth/Auth.jsx'
 import Edgecase from './components/Others/Edgecase.jsx'
@@ -51,6 +52,7 @@ const router = createBrowserRouter(
         <Route path='energypower' element={<EnergyPower />} />
         <Route path='requisitions' element={<Requisitions />} />
         <Route path='profile' element={<Profile />} />
+        <Route path='reports' element={<Reports />} />
       </Route>
       <Route path='resetpassword' element={<ProtectedRoute><ResetPasswordPage /></ProtectedRoute>}></Route>
 

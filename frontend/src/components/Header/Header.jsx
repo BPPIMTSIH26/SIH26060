@@ -7,6 +7,58 @@ import ThemeToggle from "../context/ThemeToggle";
 import AlertsDropdown from '../context/Alerts/AlertsDropdown';
 import { useToast } from "../context/ToastContext";
 
+// ==========================================
+// REUSABLE SATELLITE STATUS COMPONENT
+// ==========================================
+const SatLinkStatus = ({ isMobile }) => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const containerClasses = isMobile 
+    ? "flex items-center gap-2 px-2 py-1 rounded-full border transition-colors duration-300"
+    : "flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors duration-300";
+    
+  const dotOuterClasses = isMobile ? "relative flex h-1.5 w-1.5" : "relative flex h-2 w-2";
+  const dotInnerClasses = isMobile ? "relative inline-flex rounded-full h-1.5 w-1.5" : "relative inline-flex rounded-full h-2 w-2";
+  const textClasses = isMobile ? "font-bold uppercase tracking-widest text-[10px]" : "text-xs font-bold uppercase tracking-widest";
+
+  if (isOnline) {
+    return (
+      <div className={`${containerClasses} bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50`}>
+        <span className={dotOuterClasses}>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className={`${dotInnerClasses} bg-emerald-500`}></span>
+        </span>
+        <span className={`${textClasses} text-emerald-700 dark:text-emerald-400`}>SAT_LINK</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${containerClasses} bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50`}>
+      <span className={dotOuterClasses}>
+        <span className={`${dotInnerClasses} bg-red-500`}></span>
+      </span>
+      <span className={`${textClasses} text-red-700 dark:text-red-400`}>OFFLINE</span>
+    </div>
+  );
+};
+
+// ==========================================
+// MAIN HEADER COMPONENT
+// ==========================================
 const navLinks = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Infrastructure", to: "/infrastructure" },
@@ -14,11 +66,13 @@ const navLinks = [
   { label: "Energy & Power", to: "/energypower" },
   { label: "Logistics", to: "/logistics" },
   { label: "Requisitions", to: "/requisitions" },
+  { label: "Reports", to: "/reports" },
 ];
 
 export default function Header({ alerts = [], lastUpdate = "Just now", activeStation, setActiveStation }) {
   const [userOpen, setUserOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const dropdownRef = useRef(null);
   const navigate = useNavigate(); 
   const showToast = useToast();
@@ -35,7 +89,6 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
               email: parsedUser.email || "operator@ncpor.gov",
               role: parsedUser.role || "operator",
               avatar: parsedUser.avatar || "",
-              // FIXED: Ensure the station is extracted from the user object
               station: parsedUser.station || null 
           };
       } catch (error) {
@@ -45,15 +98,13 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
 
   const isStationMaster = user.role === "station_master";
 
-  // 2. FIXED: Synchronize activeStation on mount to survive reloads
+  // 2. Synchronize activeStation on mount to survive reloads
   useEffect(() => {
     if (isStationMaster && user.station) {
-        // Force the parent state to match the Station Master's assigned station
         if (activeStation !== user.station) {
             setActiveStation(user.station);
         }
     } else {
-        // For other roles, remember their last toggled station across reloads
         const savedStation = localStorage.getItem("polar_twin_selected_station");
         if (savedStation && savedStation !== activeStation && (savedStation === "Maitri" || savedStation === "Bharati")) {
             setActiveStation(savedStation);
@@ -62,17 +113,27 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 3. Format the role
+  // 3. Live Mission Clock (IST and UTC+03:30)
+  useEffect(() => {
+      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+      return () => clearInterval(timer);
+  }, []);
+
+  const utc = currentTime.getTime() + (currentTime.getTimezoneOffset() * 60000);
+  const istTimeStr = new Date(utc + (3600000 * 5.5)).toISOString().substring(11, 19);
+  const stationTimeStr = new Date(utc + (3600000 * 3.5)).toISOString().substring(11, 19);
+
+  // 4. Format the role
   const formatRole = (roleString) => {
       if (!roleString) return "Operator";
       return roleString.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  // 4. Handle Logout
+  // 5. Handle Logout
   const handleLogout = () => {
       setUserOpen(false);
       localStorage.removeItem("polar_twin_user"); 
-      localStorage.removeItem("polar_twin_selected_station"); // Clear station preference on logout
+      localStorage.removeItem("polar_twin_selected_station"); 
       
       if (typeof showToast === 'function') {
           showToast("Session securely terminated. Safe travels.", "info");
@@ -80,7 +141,7 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
       navigate("/auth", { replace: true }); 
   };
 
-  // 5. FIXED: Custom toggle handler to save preference in LocalStorage
+  // 6. Custom toggle handler to save preference in LocalStorage
   const handleStationToggle = (station) => {
       localStorage.setItem("polar_twin_selected_station", station);
       setActiveStation(station);
@@ -122,32 +183,47 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
     <header className="bg-amber-50 dark:bg-slate-900 border-b border-amber-200/60 dark:border-slate-700 font-sans z-50 sticky top-0 transition-colors duration-200">
       
       {/* TOP ROW */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 relative">
+      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 w-full gap-2">
           
-          {/* LEFT: Logo */}
-          <div className="flex-1 flex justify-start items-center">
+          {/* 1. LEFT: Logo */}
+          <div className="flex shrink-0 justify-start items-center">
             <Logo/>
           </div>
 
-          {/* CENTER: Station Toggle / Locked Station Badge */}
-          <div className="hidden sm:flex justify-center shrink-0">
+          {/* 2. CENTER-LEFT: Clocks */}
+          <div className="hidden lg:flex items-center gap-4 font-mono text-sm font-bold tracking-widest text-slate-600 dark:text-slate-400 shrink-0">
+            <div className="flex items-center gap-2 border-r border-gray-300 dark:border-gray-600 pr-4">
+              <span className="text-gray-500 dark:text-slate-500">IST</span>
+              <span className="text-gray-900 dark:text-slate-200">{istTimeStr}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-cyan-600 dark:text-cyan-500">STN</span>
+              <span className="text-cyan-700 dark:text-cyan-400">{stationTimeStr}</span>
+            </div>
+          </div>
+
+          {/* 3. CENTER: Station Toggle */}
+          <div className="hidden sm:flex shrink-0 justify-center">
             {isStationMaster ? (
-              // LOCKED BADGE FOR STATION MASTER
               <div className="flex items-center gap-1.5 px-4 py-1.5 bg-cyan-100/50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 rounded-full text-cyan-700 dark:text-cyan-400 text-sm font-bold tracking-wider uppercase cursor-not-allowed">
                 <MapPin className="w-4 h-4" />
-                {user.station || activeStation} {/* Dynamically show their actual station */}
+                {user.station || activeStation} 
               </div>
             ) : (
-              // FULL TOGGLE FOR LOGISTICS & AUTHORITY
               <div className="flex items-center bg-amber-200/40 dark:bg-slate-950 rounded-full p-1 border border-amber-300/50 dark:border-slate-700 shadow-inner transition-colors">
                 {["Maitri", "Bharati"].map(renderStationButton)}
               </div>
             )}
           </div>
 
-          {/* RIGHT: Actions */}
-          <div className="flex-1 flex items-center justify-end space-x-3 sm:space-x-4">
+          {/* 4. CENTER-RIGHT: Satellite Status (USING REUSABLE COMPONENT) */}
+          <div className="hidden lg:flex items-center shrink-0">
+            <SatLinkStatus isMobile={false} />
+          </div>
+
+          {/* 5. RIGHT: Actions (Theme, Alerts, User) */}
+          <div className="flex shrink-0 items-center justify-end space-x-3 sm:space-x-4">
             
             <ThemeToggle />
             <AlertsDropdown alerts={alerts} activeStation={activeStation} />
@@ -222,7 +298,7 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
 
       {/* Desktop Navigation */}
       <div className="hidden md:block bg-amber-100/40 dark:bg-slate-800/40 border-t border-amber-200/50 dark:border-transparent transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex justify-center space-x-8 overflow-x-auto scrollbar-hide">
             {navLinks.map((link) => (
               <NavLink
@@ -247,15 +323,24 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
       {menuOpen && (
         <div className="md:hidden bg-amber-50 dark:bg-slate-900 border-t border-amber-200/60 dark:border-slate-800 absolute w-full left-0 shadow-lg transition-colors z-40">
           
-          <div className="sm:hidden px-4 py-4 flex justify-center bg-amber-100/40 dark:bg-slate-950/50 border-b border-amber-200/60 dark:border-slate-800 transition-colors">
+          <div className="sm:hidden px-4 py-4 flex flex-col items-center gap-4 bg-amber-100/40 dark:bg-slate-950/50 border-b border-amber-200/60 dark:border-slate-800 transition-colors">
+            
+            {/* Clocks & Sat Status for Mobile */}
+            <div className="flex w-full justify-between items-center px-1 pb-1 font-mono text-xs tracking-widest font-semibold">
+               <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                  <span>IST: <span className="text-gray-900 dark:text-slate-200">{istTimeStr}</span></span>|
+                  <span>STN: <span className="text-cyan-700 dark:text-cyan-400">{stationTimeStr}</span></span>
+               </div>
+               {/* USING REUSABLE COMPONENT FOR MOBILE */}
+               <SatLinkStatus isMobile={true} />
+            </div>
+
             {isStationMaster ? (
-              // LOCKED BADGE FOR STATION MASTER (MOBILE)
               <div className="flex items-center justify-center gap-1.5 px-4 py-2 bg-cyan-100/50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 rounded-full text-cyan-700 dark:text-cyan-400 text-sm font-bold tracking-wider uppercase w-full max-w-xs">
                 <MapPin className="w-4 h-4" />
                 {user.station || activeStation}
               </div>
             ) : (
-              // FULL TOGGLE FOR LOGISTICS & AUTHORITY (MOBILE)
               <div className="flex items-center bg-amber-200/50 dark:bg-slate-950 rounded-full p-1 border border-amber-300/60 dark:border-slate-700 w-full max-w-xs transition-colors">
                 {["Maitri", "Bharati"].map(renderStationButton)}
               </div>
