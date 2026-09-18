@@ -1,80 +1,140 @@
+/* eslint-disable no-unused-vars */
 // src/api/config.js
 
-// 🛑 MASTER SWITCH: Set to false to use the live MongoDB backend
-export const USE_MOCK_API = false; // Set to true for development/testing with mock data
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'; // Default to localhost if env variable is not set
+export const USE_MOCK_API = true; 
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'; 
 export const delay = (ms = 800) => new Promise(resolve => setTimeout(resolve, ms));
 
+// --- STRICT DATE VALIDATOR ---
+export const validateSession = (showToast, navigateToLogin) => {
+    const user = localStorage.getItem("polar_twin_user");
+    let sessionDate = localStorage.getItem("polar_twin_session_date");
+    
+    if (!user || user === "undefined") return null;
+
+    const today = new Date().toDateString();
+
+    // SELF-HEALING FALLBACK
+    if (!sessionDate) {
+        sessionDate = today;
+        localStorage.setItem("polar_twin_session_date", today);
+    }
+
+    if (sessionDate !== today) {
+        localStorage.removeItem("polar_twin_user");
+        localStorage.removeItem("polar_twin_session_date");
+        
+        if (showToast) showToast("Session expired. Authentication is only valid for 1 day.", "error");
+        if (navigateToLogin) navigateToLogin();
+        
+        return null;
+    }
+
+    try {
+        return JSON.parse(user);
+    } catch (err) {
+        localStorage.removeItem("polar_twin_user");
+        return null;
+    }
+};
+
+// --- DATA FORMATTER HELPER ---
+// Ensures all 7 required fields + loginDate are strictly formatted
+const formatAndStoreSession = (userObj) => {
+    const today = new Date().toDateString();
+    
+    const sessionData = {
+        fullName: userObj.fullName || "Operator",
+        username: userObj.username || "operator",
+        email: userObj.email || "operator@ncpor.gov",
+        role: userObj.role || "station_master",
+        station: userObj.station || null,
+        avatar: userObj.avatar || "",
+        createdAt: userObj.createdAt || new Date().toISOString(),
+        loginDate: today
+    };
+
+    localStorage.setItem("polar_twin_user", JSON.stringify(sessionData));
+    localStorage.setItem("polar_twin_session_date", today);
+    
+    return sessionData;
+};
+
 export const authAPI = {
-    // 1. LOGIN
     login: async (credentials) => {
         if (USE_MOCK_API) {
-            console.log('--- DEV MODE: SIMULATING LOGIN ---', credentials);
             await delay();
+            const sessionData = formatAndStoreSession({
+                fullName: "NCPOR Operator",
+                username: credentials.username || "operator",
+                email: credentials.email || credentials.username || "operator@ncpor.gov",
+                role: "station_master",
+                station: "Maitri",
+            });
+            
             return {
                 status: "success",
-                data: {
-                    token: "dummy_token",
-                    user: {
-                        fullName: "NCPOR Operator",
-                        email: credentials.username || credentials.email || "operator@ncpor.gov",
-                        role: "station_master",
-                        avatar: ""
-                    }
-                }
+                data: { token: "dummy_token", user: sessionData }
             };
         }
 
-        // --- PRODUCTION: Real API call ---
         const response = await fetch(`${BASE_URL}/users/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include', // CRITICAL: This allows the backend to set the JWT cookie in your browser
+            credentials: 'include', 
             body: JSON.stringify(credentials)
         });
         
         const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || "Login failed");
-        }
+        if (!response.ok) throw new Error(data.message || "Login failed");
+
+        // Format and store the exact 7 fields using real backend data
+        const sessionData = formatAndStoreSession(data.data.user);
+        data.data.user = sessionData; // Update the returned payload
         
         return data;
     },
 
-    // 2. REGISTER
     register: async (formData) => {
         if (USE_MOCK_API) {
-            console.log('--- DEV MODE: SIMULATING REGISTRATION ---');
             await delay();
+            // In mock mode, extract the values from FormData to create the user object
+            const sessionData = formatAndStoreSession({ 
+                fullName: formData.get("fullName") || "Test User", 
+                username: formData.get("username") || "testuser",
+                email: formData.get("email") || "test@ncpor.gov", 
+                role: formData.get("role") || "station_master",
+                station: formData.get("station") || "Maitri"
+            });
+
             return { 
                 status: "success", 
                 message: "User registered successfully",
-                data: { user: { fullName: "Test User", email: "test@ncpor.gov", role: "station_master" } }
+                data: { user: sessionData }
             };
         }
 
         const response = await fetch(`${BASE_URL}/users/register`, {
             method: 'POST',
             credentials: 'include',
-            // NOTE: Do NOT set 'Content-Type' manually when sending FormData.
-            // The browser will automatically set the correct multipart/form-data boundary.
             body: formData 
         });
         
         const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || "Registration failed");
-        }
+        if (!response.ok) throw new Error(data.message || "Registration failed");
+
+        // Format and store the exact 7 fields using real backend data
+        const sessionData = formatAndStoreSession(data.data.user);
+        data.data.user = sessionData;
         
         return data;
     },
 
-    // 3. LOGOUT
     logout: async () => {
+        localStorage.removeItem("polar_twin_user");
+        localStorage.removeItem("polar_twin_session_date");
+
         if (USE_MOCK_API) {
-            console.log('--- DEV MODE: SIMULATING LOGOUT ---');
             await delay();
             return { status: "success", message: "Logged out" };
         }
@@ -88,14 +148,11 @@ export const authAPI = {
         return data;
     },
 
-    // 4. RESET PASSWORD (Forgot Password flow)
     resetPassword: async (email) => {
         if (USE_MOCK_API) {
-            console.log('--- DEV MODE: SIMULATING PASSWORD RESET ---', email);
             await delay();
             return { status: "success", message: "Recovery email sent." };
         }
-
         const response = await fetch(`${BASE_URL}/users/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -106,18 +163,15 @@ export const authAPI = {
         return data;
     },
 
-    // 5. UPDATE PASSWORD (Inside Dashboard)
     updatePassword: async (passwordData) => {
         if (USE_MOCK_API) {
-            console.log('--- DEV MODE: SIMULATING PASSWORD UPDATE ---');
             await delay(600);
             return { status: "success", message: "Password updated successfully." };
         }
-
         const response = await fetch(`${BASE_URL}/users/update-password`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include', // Needed so backend knows WHICH user is logged in via cookie
+            credentials: 'include', 
             body: JSON.stringify(passwordData)
         });
         const data = await response.json();
@@ -125,13 +179,11 @@ export const authAPI = {
         return data;
     },
 
-    // 6. VERIFY OTP & RESET PASSWORD
     verifyOtpAndReset: async (dataPayload) => {
         if (USE_MOCK_API) {
             await delay(600);
             return { status: "success", message: "Password reset successfully" };
         }
-
         const response = await fetch(`${BASE_URL}/users/reset-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -142,19 +194,16 @@ export const authAPI = {
         return data;
     },
     
-    // 7. SEND REGISTRATION OTP
     sendRegistrationOtp: async (dataPayload) => {
         if (USE_MOCK_API) {
             await delay(600);
             return { status: "success", message: "OTP sent" };
         }
-
         const response = await fetch(`${BASE_URL}/users/send-registration-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dataPayload)
         });
-        
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || "Failed to send OTP");
         return data;

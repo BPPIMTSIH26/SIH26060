@@ -2,18 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Lock, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { authAPI } from "../../services/config";
-import { useToast } from "../../components/context/ToastContext"; // Import the custom hook
+import { useToast } from "../../components/context/ToastContext"; 
 
 export default function Login({ onSwitchMode, onForgotClick }) {
     const navigate = useNavigate();
-    const showToast = useToast(); // Initialize the toast function
+    const showToast = useToast(); 
 
     const [identifier, setIdentifier] = useState(""); 
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
-const handleLogin = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
@@ -25,17 +25,6 @@ const handleLogin = async (e) => {
 
             const user = data.data.user;
 
-            // Save complete user session for ProtectedRoute, Header, and Profile
-            localStorage.setItem("polar_twin_user", JSON.stringify({
-                fullName: user.fullName,
-                username: user.username,
-                email: user.email,
-                role: user.role || "station_master",
-                station: user.station || null,
-                avatar: user.avatar || "",
-                createdAt: user.createdAt || new Date().toISOString()
-            }));
-
             showToast(`Clearance verified. Welcome back, ${user.fullName}.`, "success");
             navigate("/dashboard", { replace: true });
         } catch (error) {
@@ -46,7 +35,6 @@ const handleLogin = async (e) => {
         }
     };
 
-    // Mobile optimization: text-base prevents iOS zoom on focus, py-3 creates a larger touch target
     const inputBase = "w-full pl-11 pr-11 py-3 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-colors text-base sm:text-sm font-medium text-gray-900 dark:text-white placeholder:text-gray-400";
 
     return (
@@ -63,7 +51,6 @@ const handleLogin = async (e) => {
 
             <form className="space-y-6 sm:space-y-5" onSubmit={handleLogin}>
                 
-                {/* Username / Email Field */}
                 <div>
                     <label className="block text-base sm:text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2 sm:mb-1.5">
                         Username or Email
@@ -81,7 +68,6 @@ const handleLogin = async (e) => {
                     </div>
                 </div>
 
-                {/* Password Field */}
                 <div>
                     <div className="flex items-center justify-between mb-2 sm:mb-1.5">
                         <label className="block text-base sm:text-sm font-semibold text-gray-700 dark:text-slate-300">
@@ -117,7 +103,6 @@ const handleLogin = async (e) => {
                     </div>
                 </div>
 
-                {/* Submit Button */}
                 <button 
                     type="submit" 
                     disabled={loading} 
@@ -127,7 +112,6 @@ const handleLogin = async (e) => {
                 </button>
             </form>
 
-            {/* Switch Mode */}
             <p className="mt-8 text-center text-base sm:text-sm font-medium text-gray-600 dark:text-slate-400">
                 No clearance?{" "}
                 <button 

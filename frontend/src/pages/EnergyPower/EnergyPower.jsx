@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { energyAPI } from "../../services/energy";
 import { Zap, ZapOff, Battery, Flame } from "lucide-react";
-
+import { animateOnScroll } from "../../scrollAnimation";
 import Skeleton from "../../components/context/Skeleton";
 import EnergyKpiGrid from "./components/EnergyKpiGrid";
 import PowerLoadChart from "./components/PowerLoadChart";
@@ -14,7 +14,6 @@ import FuelSystem from "./components/FuelSystem";
 import PowerDistribution from "./components/PowerDistribution";
 import { useGlobalAlert } from "../../components/context/Alerts/GlobalAlertContext";
 
-// --- NEW HELPER: Safely clamp floating point numbers ---
 const formatMetric = (val, decimals = 1) => {
   if (val === undefined || val === null || isNaN(val)) return "0";
   return Number(val).toFixed(decimals);
@@ -22,13 +21,12 @@ const formatMetric = (val, decimals = 1) => {
 
 export default function Energy() {
   const { activeStation = "Maitri" } = useOutletContext() || {};
-  
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const { pushAlert } = useGlobalAlert();
 
+  // Data fetching & background polling
   useEffect(() => {
     const abortController = new AbortController();
 
@@ -62,34 +60,31 @@ export default function Energy() {
       }
     };
 
-    // 1. Fetch immediately
     fetchEnergy(false);
-
-    // 2. Silent 30-second polling loop
-    const intervalId = setInterval(() => {
-      fetchEnergy(true);
-    }, 30000);
-
+    const intervalId = setInterval(() => fetchEnergy(true), 30000);
     return () => { 
       clearInterval(intervalId);
       abortController.abort(); 
     };
   }, [activeStation, pushAlert]);
 
-  // =========================================================================
-  // OPTIMIZED SKELETON LOADING STATE
-  // =========================================================================
+  // Trigger scroll animations after data paints
+  useEffect(() => {
+    if (data && !loading) {
+      const timer = setTimeout(() => animateOnScroll(".scroll-box"), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [data, loading]);
+
+  // Comprehensive skeleton matching the exact dashboard layout
   if (loading) {
     return (
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950 font-sans">
-        
-        {/* Header Skeleton */}
-        <div className="mb-2 space-y-2">
-          <Skeleton className="h-8 w-64" />
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950 font-sans transition-colors duration-300">
+        <div className="mb-2">
+          <Skeleton className="h-8 w-64 mb-2" />
           <Skeleton className="h-4 w-96 max-w-full" />
         </div>
         
-        {/* Row 1: KPI Grid Skeleton */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-3.5 sm:p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-900/40">
@@ -102,62 +97,33 @@ export default function Energy() {
           ))}
         </div>
 
-        {/* Row 2: Charts & Alerts */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2 flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[300px]">
-            <div className="flex justify-between mb-4">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-3 w-32 hidden sm:block" />
-            </div>
+            <div className="flex justify-between mb-4"><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-32 hidden sm:block" /></div>
             <Skeleton className="flex-1 w-full rounded-xl" />
           </div>
-
           <div className="lg:col-span-1 flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[300px]">
-            <div className="flex justify-between mb-4">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
-            </div>
+            <div className="flex justify-between mb-4"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-20" /></div>
+            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           </div>
         </div>
 
-        {/* Row 3: Sources Table & Batteries */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2 flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[300px]">
-            <div className="flex justify-between mb-6">
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-full rounded-lg" />
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
-            </div>
+            <div className="flex justify-between mb-6"><Skeleton className="h-4 w-48" /><Skeleton className="h-3 w-24" /></div>
+            <div className="space-y-4"><Skeleton className="h-6 w-full rounded-lg" />{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
           </div>
-
           <div className="lg:col-span-1 flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[300px]">
-            <div className="flex justify-between mb-4">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-            <div className="space-y-3">
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
-            </div>
+            <div className="flex justify-between mb-4"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-20" /></div>
+            <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
           </div>
         </div>
 
-        {/* Row 4: Power Distribution & Fuel */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {[1, 2].map((card) => (
             <div key={card} className="flex flex-col rounded-2xl border border-slate-200/80 bg-white/50 backdrop-blur-md p-5 dark:border-slate-800/80 dark:bg-slate-900/40 min-h-[250px]">
-              <div className="flex justify-between mb-4">
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-3 w-24" />
-              </div>
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
-              </div>
+              <div className="flex justify-between mb-4"><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-24" /></div>
+              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             </div>
           ))}
         </div>
@@ -169,9 +135,6 @@ export default function Energy() {
     return <div className="text-red-500 font-sans p-6 font-semibold">Error loading energy data: {error}</div>;
   }
 
-  // =========================================================================
-  // DATA MAPPING (Clamped Floating Points!)
-  // =========================================================================
   const pwr = data.power_distribution || {};
   const isDeficit = (pwr.net_power_deficit_kw ?? 0) < 0;
 
@@ -230,7 +193,7 @@ export default function Energy() {
   }));
 
   return (
-    <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950 font-sans">
+    <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6 w-full bg-amber-50 dark:bg-slate-950 font-sans transition-colors duration-300">
       
       <div className="mb-2">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
@@ -241,21 +204,35 @@ export default function Energy() {
         </p>
       </div>
 
-      <EnergyKpiGrid kpis={kpis} />
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <PowerLoadChart powerSeries={powerSeries} />
-        <GridAlerts energyJson={data} />
+      <div className="scroll-box">
+        <EnergyKpiGrid kpis={kpis} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 flex flex-col"><PowerSourcesTable sources={sources} /></div>
-        <div className="lg:col-span-1 flex flex-col"><BatteryBanks batteries={batteries} /></div>
+        <div className="scroll-box lg:col-span-2 flex flex-col">
+          <PowerLoadChart powerSeries={powerSeries} />
+        </div>
+        <div className="scroll-box lg:col-span-1 flex flex-col">
+          <GridAlerts energyJson={data} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="scroll-box lg:col-span-2 flex flex-col">
+          <PowerSourcesTable sources={sources} />
+        </div>
+        <div className="scroll-box lg:col-span-1 flex flex-col">
+          <BatteryBanks batteries={batteries} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <PowerDistribution energyJson={data} />
-        <FuelSystem energyJson={data} />
+        <div className="scroll-box flex flex-col">
+          <PowerDistribution energyJson={data} />
+        </div>
+        <div className="scroll-box flex flex-col">
+          <FuelSystem energyJson={data} />
+        </div>
       </div>
 
     </div>
