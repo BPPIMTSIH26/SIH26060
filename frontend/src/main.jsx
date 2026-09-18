@@ -4,7 +4,7 @@ import './index.css'
 import { Route, RouterProvider, createBrowserRouter, createRoutesFromElements, Navigate } from 'react-router-dom'
 
 import Layout from './Layout.jsx'
-import Home from './components/Home/lome.jsx'
+import Home from './components/Home/Home.jsx'
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import Logistics from './pages/Logistics/Logistics.jsx'
 import Environment from './pages/Environment/Environment.jsx'
