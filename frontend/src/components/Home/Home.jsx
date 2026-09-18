@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import Logo from '../../../public/Logo';
 import ThemeToggle from '../context/ThemeToggle';
-import AntarcticMap from '../../components/Others/AntarcticMap'; 
+import AntarcticMap from '../Others/AntarcticMap'; 
 
 const stationData = [
   {
