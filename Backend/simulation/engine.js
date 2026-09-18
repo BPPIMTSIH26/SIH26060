@@ -291,6 +291,59 @@ const initializeDatabaseLink = async () => {
 initializeDatabaseLink();
 
 // ============================================================================
+// AUTO-RESUPPLY MECHANISM
+// ============================================================================
+const performAutoResupply = (state, stationId) => {
+    if (!state.logistics) return;
+    
+    let needsResupply = false;
+    const fuelTank = state.logistics.fuel_reserves?.primary_tank;
+    const food = state.logistics.supplies?.food;
+
+    // Trigger Condition 1: Fuel drops below 15%
+    if (fuelTank && fuelTank.current_level_percent < 15) {
+        needsResupply = true;
+    }
+
+    // Trigger Condition 2: Food drops below 14 days (Critical status)
+    if (food && food.current_stock_days < 14) {
+        needsResupply = true;
+    }
+
+    // If any critical threshold is hit, restore EVERYTHING to 100%
+    if (needsResupply) {
+        if (fuelTank) {
+            fuelTank.current_level_liters = fuelTank.total_capacity_liters;
+        }
+        
+        if (food) {
+            food.current_stock_kg = food.max_capacity_kg;
+        }
+
+        if (state.logistics.supplies?.medical) {
+            state.logistics.supplies.medical.total_units = stationId === "Maitri" ? 450 : 800;
+            state.logistics.supplies.medical.critical_items.forEach(item => item.stock_percent = 100);
+        }
+
+        // Inject a visual log into the UI so users know the system auto-corrected
+        if (!state.logistics.recent_deliveries) state.logistics.recent_deliveries = [];
+        state.logistics.recent_deliveries.unshift({
+            item: "Automated Fleet Resupply",
+            category: "Bulk Override",
+            qty: 9999,
+            delivered_by: "SYSTEM_AUTO_REFILL",
+            timestamp: new Date()
+        });
+
+        if (state.logistics.recent_deliveries.length > 10) {
+            state.logistics.recent_deliveries.pop();
+        }
+
+        console.log(`[Auto-Resupply] ${stationId} hit critical thresholds. All logistics restored to 100%.`);
+    }
+};
+
+// ============================================================================
 // 4. THE PHYSICS LOOP (Runs every 2 seconds independently)
 // ============================================================================
 setInterval(() => {
@@ -305,10 +358,14 @@ setInterval(() => {
 
         if (state.logistics) {
             state.logistics = logisticsEngine.tick(state.logistics, state.energy, 12);
+            
+            // --- AUTOMATED TRIGGER ---
+            // Checks the depleted values immediately after the tick
+            performAutoResupply(state, station);
         }
         state.health = alertEngine.evaluate(state);
     });
-}, 2000); 
+}, 2000);
 
 // ============================================================================
 // 5. DATABASE SYNC LOOP: Restricted to Keep Database Clean
