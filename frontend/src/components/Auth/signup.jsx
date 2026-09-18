@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Lock, User, Fingerprint, ArrowRight, Loader2, Building, Package, Shield, Upload, Eye, EyeOff, MapPin, KeyRound, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, Fingerprint, ArrowRight, Loader2, Building, Package, Shield, Upload, Eye, EyeOff, MapPin, KeyRound } from "lucide-react";
 import { authAPI } from "../../services/config";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../components/context/ToastContext";
@@ -25,7 +25,6 @@ export default function Signup({ onSwitchMode }) {
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    // Handles moving from Step 2 -> Step 3 (Triggers OTP Email)
     const handleRequestOtp = async (e) => {
         e.preventDefault();
         
@@ -38,7 +37,7 @@ export default function Signup({ onSwitchMode }) {
         try {
             await authAPI.sendRegistrationOtp({ email: formData.email, username: formData.username });
             showToast("Clearance code dispatched. Check your inbox.", "info");
-            setStep(3); // Move to OTP input step
+            setStep(3); 
         } catch (error) {
             console.error(error);
             showToast(error.message || "Failed to initiate registration.", "error");
@@ -47,7 +46,6 @@ export default function Signup({ onSwitchMode }) {
         }
     };
 
-// Handles the Final Submission (Step 3 -> Dashboard)
     const handleFinalSignup = async (e) => {
         e.preventDefault();
         
@@ -67,23 +65,9 @@ export default function Signup({ onSwitchMode }) {
 
         setLoading(true);
         try {
-            // Capture the response from your backend registration route
-            const res = await authAPI.register(payload);
-            const userObj = res.data?.user || {};
-
-            localStorage.setItem("polar_twin_user", JSON.stringify({
-                fullName: userObj.fullName || formData.fullName,
-                username: userObj.username || formData.username,
-                email: userObj.email || formData.email,
-                role: userObj.role || formData.role,
-                station: userObj.station || (formData.role === "station_master" ? formData.station : null),
-                avatar: userObj.avatar || "",
-                createdAt: userObj.createdAt || new Date().toISOString()
-            }));
-
+            await authAPI.register(payload);
             showToast("Clearance granted. Welcome to Polar Twin.", "success");
             navigate("/dashboard", { replace: true });
-            
         } catch (error) {
             console.error(error);
             showToast(error.message || "Invalid clearance code. Please try again.", "error");
@@ -108,14 +92,12 @@ export default function Signup({ onSwitchMode }) {
                 </p>
             </div>
 
-            {/* STEP 1: ROLE SELECTION */}
             {step === 1 && (
                 <form onSubmit={() => setStep(2)} className="space-y-4 animate-in fade-in duration-300">
                     <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2.5 text-center sm:text-left">
                         Select Operational Role
                     </label>
                     <div className="flex flex-col gap-2.5 mb-6">
-                        {/* Station Master */}
                         <label className={`cursor-pointer flex items-center p-3 rounded-xl border transition-all duration-200 ${formData.role === 'station_master' ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400 shadow-sm' : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
                             <input type="radio" name="role" value="station_master" className="hidden" onChange={handleChange} />
                             <div className={`flex items-center justify-center w-9 h-9 rounded-lg mr-3 ${formData.role === 'station_master' ? 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
@@ -124,7 +106,6 @@ export default function Signup({ onSwitchMode }) {
                             <div className="flex-1"><span className="block text-sm font-semibold">Station Master</span></div>
                         </label>
                         
-                        {/* Logistics Officer */}
                         <label className={`cursor-pointer flex items-center p-3 rounded-xl border transition-all duration-200 ${formData.role === 'logistics' ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 shadow-sm' : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
                             <input type="radio" name="role" value="logistics" className="hidden" onChange={handleChange} />
                             <div className={`flex items-center justify-center w-9 h-9 rounded-lg mr-3 ${formData.role === 'logistics' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
@@ -133,7 +114,6 @@ export default function Signup({ onSwitchMode }) {
                             <div className="flex-1"><span className="block text-sm font-semibold">Logistics Officer</span></div>
                         </label>
                         
-                        {/* High Authority */}
                         <label className={`cursor-pointer flex items-center p-3 rounded-xl border transition-all duration-200 ${formData.role === 'authority' ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 shadow-sm' : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800'}`}>
                             <input type="radio" name="role" value="authority" className="hidden" onChange={handleChange} />
                             <div className={`flex items-center justify-center w-9 h-9 rounded-lg mr-3 ${formData.role === 'authority' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-slate-800 text-gray-500'}`}>
@@ -149,7 +129,6 @@ export default function Signup({ onSwitchMode }) {
                 </form>
             )}
 
-            {/* STEP 2: PROFILE DETAILS (Now triggers OTP request instead of final signup) */}
             {step === 2 && (
                 <form onSubmit={handleRequestOtp} className="space-y-4 animate-in slide-in-from-right-4 duration-300">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
@@ -229,7 +208,6 @@ export default function Signup({ onSwitchMode }) {
                 </form>
             )}
 
-            {/* STEP 3: OTP VERIFICATION */}
             {step === 3 && (
                 <form onSubmit={handleFinalSignup} className="space-y-4 animate-in slide-in-from-right-4 duration-300">
                     <div>
