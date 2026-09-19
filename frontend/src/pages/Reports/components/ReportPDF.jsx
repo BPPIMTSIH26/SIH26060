@@ -1,5 +1,14 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
+// ==========================================
+// UTILITY: FORMAT NUMBERS TO 2 DECIMALS MAX
+// ==========================================
+const formatVal = (val) => {
+    if (val === null || val === undefined) return 0;
+    const num = Number(val);
+    return isNaN(num) ? val : Number(num.toFixed(2));
+};
+
 const styles = StyleSheet.create({
     page: {
         paddingTop: 35,
@@ -205,19 +214,19 @@ const OverallTable = ({ reportData }) => {
                 <View style={[styles.tableColHeaderBase, col33]}><Text style={styles.tableCellHeader}>Logistics</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Gen: {energy_analysis?.metrics?.average_generation_kw || 0} kW</Text></View>
-                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Exterior: {environment_analysis?.metrics?.outside_temp_c || 0}°C</Text></View>
-                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Food: {logistics_analysis?.supplies?.food?.current_stock_days || 0} Days</Text></View>
+                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Gen: {formatVal(energy_analysis?.metrics?.average_generation_kw)} kW</Text></View>
+                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Exterior: {formatVal(environment_analysis?.metrics?.outside_temp_c)}°C</Text></View>
+                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Food: {formatVal(logistics_analysis?.supplies?.food?.current_stock_days)} Days</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Load: {energy_analysis?.metrics?.average_load_kw || 0} kW</Text></View>
-                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Wind: {environment_analysis?.metrics?.wind_speed_kmh || 0} km/h</Text></View>
-                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Medical: {logistics_analysis?.supplies?.medical?.current_stock_percent || 0}%</Text></View>
+                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Load: {formatVal(energy_analysis?.metrics?.average_load_kw)} kW</Text></View>
+                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Wind: {formatVal(environment_analysis?.metrics?.wind_speed_kmh)} km/h</Text></View>
+                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Medical: {formatVal(logistics_analysis?.supplies?.medical?.current_stock_percent)}%</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCellBold}>Battery: {energy_analysis?.metrics?.battery_charge_percent || 0}%</Text></View>
+                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCellBold}>Battery: {formatVal(energy_analysis?.metrics?.battery_charge_percent)}%</Text></View>
                 <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Blizzard: {environment_analysis?.metrics?.blizzard_active ? "ACTIVE" : "Clear"}</Text></View>
-                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Fuel Tank: {energy_analysis?.fuel_status?.fuel_level_percent || 0}%</Text></View>
+                <View style={[styles.tableColBase, col33]}><Text style={styles.tableCell}>Fuel Tank: {formatVal(energy_analysis?.fuel_status?.fuel_level_percent)}%</Text></View>
             </View>
         </View>
     );
@@ -233,20 +242,20 @@ const EnergyTable = ({ reportData }) => {
                 <View style={[styles.tableColHeaderBase, col50]}><Text style={styles.tableCellHeader}>Reserves & Storage</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Average Generation: {energy_analysis?.metrics?.average_generation_kw || 0} kW</Text></View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Battery Charge: {energy_analysis?.metrics?.battery_charge_percent || 0}%</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Average Generation: {formatVal(energy_analysis?.metrics?.average_generation_kw)} kW</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Battery Charge: {formatVal(energy_analysis?.metrics?.battery_charge_percent)}%</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Average Load: {energy_analysis?.metrics?.average_load_kw || 0} kW</Text></View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Backup Hours: {energy_analysis?.metrics?.backup_hours_remaining || 0} hrs</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Average Load: {formatVal(energy_analysis?.metrics?.average_load_kw)} kW</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Backup Hours: {formatVal(energy_analysis?.metrics?.backup_hours_remaining)} hrs</Text></View>
             </View>
             <View style={styles.tableRow}>
                 <View style={[styles.tableColBase, col50]}>
                     <Text style={[styles.tableCellBold, { color: (energy_analysis?.metrics?.net_deficit_kw || 0) < 0 ? '#ef4444' : '#10b981' }]}>
-                        Net Deficit: {energy_analysis?.metrics?.net_deficit_kw || 0} kW
+                        Net Deficit: {formatVal(energy_analysis?.metrics?.net_deficit_kw)} kW
                     </Text>
                 </View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Primary Fuel Level: {energy_analysis?.fuel_status?.fuel_level_percent || 0}%</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Primary Fuel Level: {formatVal(energy_analysis?.fuel_status?.fuel_level_percent)}%</Text></View>
             </View>
         </View>
     );
@@ -262,11 +271,11 @@ const EnvironmentTable = ({ reportData }) => {
                 <View style={[styles.tableColHeaderBase, col50]}><Text style={styles.tableCellHeader}>Visibility & Phenomena</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Outside Temperature: {environment_analysis?.metrics?.outside_temp_c || 0}°C</Text></View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Visibility: {environment_analysis?.metrics?.visibility_meters || 0} meters</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Outside Temperature: {formatVal(environment_analysis?.metrics?.outside_temp_c)}°C</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Visibility: {formatVal(environment_analysis?.metrics?.visibility_meters)} meters</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Wind Speed: {environment_analysis?.metrics?.wind_speed_kmh || 0} km/h</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Wind Speed: {formatVal(environment_analysis?.metrics?.wind_speed_kmh)} km/h</Text></View>
                 <View style={[styles.tableColBase, col50]}>
                     <Text style={[styles.tableCellBold, { color: environment_analysis?.metrics?.blizzard_active ? '#ef4444' : '#10b981' }]}>
                         Blizzard State: {environment_analysis?.metrics?.blizzard_active ? "ACTIVE" : "CLEAR"}
@@ -287,12 +296,12 @@ const LogisticsTable = ({ reportData }) => {
                 <View style={[styles.tableColHeaderBase, col50]}><Text style={styles.tableCellHeader}>Personnel & Reserves</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Food Stock: {logistics_analysis?.supplies?.food?.current_stock_days || 0} Days Remaining</Text></View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Personnel on Station: {logistics_analysis?.personnel?.on_station || 0} Pax</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Food Stock: {formatVal(logistics_analysis?.supplies?.food?.current_stock_days)} Days Remaining</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Personnel on Station: {formatVal(logistics_analysis?.personnel?.on_station)} Pax</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Medical Supplies: {logistics_analysis?.supplies?.medical?.current_stock_percent || 0}% Level</Text></View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Emergency Fuel: {logistics_analysis?.supplies?.fuel_emergency_reserve?.current_liters || 0} L</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Medical Supplies: {formatVal(logistics_analysis?.supplies?.medical?.current_stock_percent)}% Level</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Emergency Fuel: {formatVal(logistics_analysis?.supplies?.fuel_emergency_reserve?.current_liters)} L</Text></View>
             </View>
         </View>
     );
@@ -308,8 +317,8 @@ const InfrastructureTable = ({ reportData }) => {
                 <View style={[styles.tableColHeaderBase, col50]}><Text style={styles.tableCellHeader}>Internal Climate</Text></View>
             </View>
             <View style={styles.tableRow}>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Structural Integrity: {system_health_breakdown?.infrastructure_score || 0}%</Text></View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Main Lab Temp: {infrastructure_analysis?.modules?.main_lab?.average_temperature_c || 0}°C</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Structural Integrity: {formatVal(system_health_breakdown?.infrastructure_score)}%</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Main Lab Temp: {formatVal(infrastructure_analysis?.modules?.main_lab?.average_temperature_c)}°C</Text></View>
             </View>
             <View style={styles.tableRow}>
                 <View style={[styles.tableColBase, col50]}>
@@ -317,11 +326,11 @@ const InfrastructureTable = ({ reportData }) => {
                         Status: {system_health_breakdown?.infrastructure_status || "NOMINAL"}
                     </Text>
                 </View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Quarters Temp: {infrastructure_analysis?.modules?.living_quarters?.average_temperature_c || 0}°C</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Quarters Temp: {formatVal(infrastructure_analysis?.modules?.living_quarters?.average_temperature_c)}°C</Text></View>
             </View>
             <View style={styles.tableRow}>
                 <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>HVAC System: {infrastructure_analysis?.hvac_system?.status?.toUpperCase() || 'NOMINAL'}</Text></View>
-                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Storage Temp: {infrastructure_analysis?.modules?.storage?.average_temperature_c || 0}°C</Text></View>
+                <View style={[styles.tableColBase, col50]}><Text style={styles.tableCell}>Storage Temp: {formatVal(infrastructure_analysis?.modules?.storage?.average_temperature_c)}°C</Text></View>
             </View>
         </View>
     );
@@ -380,7 +389,7 @@ export default function ReportPDF({ reportData, reportType, reportCategory = 'ov
                         <Text style={{ fontSize: 9, color: '#94a3b8', marginTop: 2, fontFamily: 'Courier' }}>ID: {reportData.report_id}</Text>
                     </View>
                     <View style={styles.headerRight}>
-                        <Text style={styles.scoreText}>Health: {executive_summary.overall_health_score}/100</Text>
+                        <Text style={styles.scoreText}>Health: {formatVal(executive_summary.overall_health_score)}/100</Text>
                         <Text style={[styles.statusText, { color: getStatusColor(executive_summary.operational_status) }]}>
                             STATUS: {executive_summary.operational_status}
                         </Text>

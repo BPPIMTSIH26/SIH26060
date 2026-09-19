@@ -5,8 +5,9 @@
 <div align="center">
 
   <!-- Hackathon Meta Badges -->
-  <a href="https://sih.gov.in"><img src="https://img.shields.io/badge/Smart_India_Hackathon-2026_National_Finals-0284c7?style=flat-square" alt="SIH 2026" /></a>
+  <a href="https://sih.gov.in"><img src="https://img.shields.io/badge/Smart_India_Hackathon-2026-0284c7?style=flat-square" alt="SIH 2026" /></a>
   <a href="https://github.com/BPPIMTSIH26"><img src="https://img.shields.io/badge/Organization-BPPIMTSIH26-4f46e5?style=flat-square" alt="Organization" /></a>
+  <a href="https://github.com/BPPIMTSIH26"><img src="https://img.shields.io/badge/Team-ORION-339933?style=flat-square" alt="Organization" /></a>
   <a href="https://github.com/BPPIMTSIH26/SIH26060"><img src="https://img.shields.io/badge/Problem_Statement_ID-26060-059669?style=flat-square" alt="Problem Statement" /></a>
 
   <!-- Technology Stack Badges -->
@@ -33,7 +34,7 @@ This system provides real-time monitoring, predictive alert logic, and role-base
 <div align="center">
 
 > **Smart India Hackathon (SIH 2026) | Problem Statement ID: 26060**  
-> **Institution:** B.P. Poddar Institute of Management & Technology (**BPPIMTSIH26**)  
+> **Institution:** B.P. Poddar Institute of Management & Technology (**BPPIMT**)  
 > **Lead Architect & Full-Stack Engineer:** **[Sayantan Pachal](https://github.com/sayantan-pachal)**
 </div>
 
@@ -48,16 +49,18 @@ This system provides real-time monitoring, predictive alert logic, and role-base
 | **Category** | Software / Remote Monitoring / Operational Intelligence |
 | **Domain Bucket** | Smart Automation / Disaster Management / Earth & Polar Sciences |
 | **Target End-Users** | NCPOR Command, Station Masters, Logistics Planners, Higher Authority |
-| **Core Innovation** | Real-Time Telemetry Simulation + Global Event-Driven Alerts + Multi-Stage RBAC Logistics |
+| **Core Innovation** | Ultra-Low Bandwidth Telemetry (~4KB JSON) + 3-Tier Predictive Alerts + Multi-Stage RBAC Logistics + Dynamic Report Generation |
 
 ### The Real-World Challenge
 
-Managing India's extreme-environment research stations (Maitri and Bharati) in Antarctica presents unprecedented logistical and operational challenges:
+Managing India's extreme-environment research stations (Maitri and Bharati) in Antarctica presents unprecedented logistical and operational bottlenecks:
 
-1. **Severe Environmental Hazards**: Lethal temperature drops, blinding blizzards, and gale-force winds require instantaneous lockdown protocols to protect personnel and infrastructure.
-2. **Hardware Disconnection & Testing Bottlenecks**: Developers and planners lack physical access to classified or remote sensor hardware, necessitating a high-fidelity simulation environment to test response protocols.
-3. **Fragmented Supply Chains**: Managing critical supplies (fuel, medical, rations) across continents requires an infallible, multi-stage approval workflow from requisition to on-station delivery.
-4. **Interdependent Subsystem Failures**: A power deficit directly impacts thermal management; a blizzard delays logistics. Traditional isolated dashboards fail to map these cascading cause-and-effect relationships.
+1. **Constrained Satellite Bandwidth:** Transmitting high-frequency operational data from the South Pole risks severe latency, packet loss, and network saturation over limited satellite uplinks.
+2. **Severe Environmental Hazards:** Lethal temperature drops and blinding blizzards require instantaneous detection to initiate automated lockdown protocols and protect both personnel and infrastructure.
+3. **Cascading Subsystem Failures:** A localized power deficit directly impacts life-support thermal management, while incoming weather delays critical logistics. Traditional, isolated dashboards fail to map these cause-and-effect relationships.
+4. **High-Stakes Supply Chain Fragmentation:** Managing life-critical supplies (fuel, medical, rations) across continents demands a fault-tolerant, multi-stage authorization workflow from initial requisition to on-station delivery.
+5. **Hardware Isolation & Testing Latency:** Developers and planners lack physical access to classified remote sensor arrays, necessitating a high-fidelity software simulation environment to safely test disaster response protocols.
+6. **Reporting & Oversight Delays:** Higher authorities at NCPOR command require immediate, structured situational awareness, but compiling data across fragmented systems leads to dangerous intelligence delays.
 
 ## 💡 The POLAR TWIN Solution
 
@@ -65,61 +68,68 @@ Managing India's extreme-environment research stations (Maitri and Bharati) in A
 
 ```mermaid
 flowchart TD
-    A[Backend Telemetry Simulation Engine] --> B[Global Event Bus / WebSockets]
-    B --> C[Environment: Blizzard & Temp Logic]
-    B --> D[Energy: Grid Load & Battery Depletion]
-    B --> E[Infrastructure: HVAC & Structural Health]
+    subgraph Simulation [Autonomous Telemetry Engine]
+        A[Node.js Backend Simulation] --> B[Fast-Lane API / ~4KB Payload]
+        B --> C[Environment: Blizzard & Temp]
+        B --> D[Energy: Grid Load & Battery]
+        B --> E[Infrastructure: HVAC & Structural]
+    end
     
-    C -->|Trigger| F[Automated Station Lockdown]
-    D -->|Deficit| G[Automated Load Shedding]
-    E -->|Failure| H[Critical Fire/Thermal Alert]
-    
-    F --> I[Alert Propagation Engine]
-    G --> I
-    H --> I
-    
-    I --> J[Tactical UI Dashboard]
-    
-    K[Station Master Requisition] --> L[Multi-Stage Logistics Workflow]
-    L --> M[Authority Approval]
-    M --> N[Logistics Processing & Transit]
-    N --> O[Station Delivery & Inventory Sync]
-    
-    J --> P[Automated A4 PDF/CSV Executive Reports]
-    O --> P
+    subgraph Triage [3-Tier Predictive Triage]
+        C -->|Trigger| F[Automated Station Lockdown]
+        D -->|Deficit| G[Automated Load Shedding]
+        E -->|Failure| H[Critical Fire/Thermal Alert]
+        
+        F --> I[Alert Propagation Engine]
+        G --> I
+        H --> I
+    end
+
+    subgraph Workflow [RBAC Supply Chain]
+        K[Station Master Requisition] --> S[Slow-Lane API / Transactional Ledger]
+        S --> L[Authority Approval]
+        L --> M[Logistics Processing & Transit]
+        M --> N[Station Delivery & Comprehensive Inventory Sync]
+    end
+
+    subgraph Command [Tactical Interface]
+        I --> J[React UI Comprehensive Dashboard]
+        N --> J
+        J --> O[Dynamic A4 PDF/CSV Executive Reports]
+    end
 ```
 
-## 🌟 The Five Pillars of Intelligence
+## ⚙️ Core System Capabilities
 
-### 1. 📡 Real-Time Telemetry Simulation Engine
+### 1. 📡 Ultra-Low Bandwidth Telemetry Engine
 
-- Operates entirely independently of physical hardware via a custom Node.js backend generation engine.
-- **Simulates realistic operational parameters**: ambient temperature fluctuations, wind speeds, generator loads, and fuel burn rates.
-- Pushes live updates directly to the React frontend, behaving identically to a true field-deployed sensor array.
+- Operates independently via a custom Node.js backend generation engine, realistically simulating ambient temperature fluctuations, generator loads, and fuel burn rates.
+- **Extreme Data Optimization:** Compresses the entire interdependent state of the station (Energy, Environment, Infrastructure) into a microscopic **~4KB JSON payload**, ensuring zero-latency updates over severely constrained Antarctic networks.
 
-### 2. ⚡ Interdependent Energy & Power Grid
+### 2. 🚨 3-Tier Predictive Alert System
 
-- **Live Net Power Mapping**: Continuously calculates total generation against station load.
-- **Battery Depletion Logic**: Autonomously triggers estimated time-to-empty calculations when generation drops below load.
-- **Fuel Reserves**: Real-time percentage tracking and days-remaining projections based on current consumption.
+- **Autonomous Triage:** Continuously parses telemetry streams to classify anomalies into a strict, globally visible 3-stage matrix (Nominal, Warning, Critical).
+- **Event-Driven Mitigation:** Detects rapid temperature drops and high winds to immediately trigger cross-system blizzard lockdowns and automatic load shedding before catastrophic failure occurs.
 
-### 3. ❄️ Environmental Defense & Infrastructure Health
+### 3. ⚡ Interdependent Grid & Infrastructure Health
 
-- Monitors exterior phenomena (visibility, gale warnings) and internal conditions (module temperatures).
-- **Automated Blizzard Protocols**: Detects rapid temperature drops and high winds to trigger cross-system lockdown alerts.
-- Tracks HVAC efficiency, fire suppression readiness, and module-specific structural integrity.
+- **Live Net Power Mapping:** Continuously calculates total generation against station load, deploying autonomous battery depletion logic and estimated time-to-empty calculations.
+- **Structural Diagnostics:** Tracks HVAC efficiency, fire suppression readiness, and module-specific internal climates (e.g., Main Lab vs. Living Quarters).
 
-### 4. 📦 Full-Scale Logistics & Supply Chain Workflow
+### 4. 📦 State-Machine Logistics & Supply Workflow
 
-- Complete lifecycle management from local station requisition to final delivery.
-- Implements a rigid state-machine workflow: Requested → Authority Approved → Processing → In Transit → Delivered.
-- Prevents critical resource depletion by syncing incoming shipments directly with the live telemetry engine.
+- **End-to-End Tracking:** Enforces a rigid lifecycle for all critical resources: *Requested → Authority Approved → Processing → In Transit → Delivered.*
+- **Telemetry Syncing:** Prevents resource depletion by intelligently syncing projected delivery ETAs with the live inventory burn-rate engine.
 
 ### 5. 🛡️ Military-Grade Access Control (RBAC)
 
-- **Station Masters**: Geofenced to their assigned Antarctic station (Maitri or Bharati).
-- **Logistics & Authority Users**: Cross-station oversight capabilities with elevated approval privileges.
-- Secured via strict JWT HTTP-only cookies, robust session management, and Gmail-based OTP verification for high-clearance account creation and recovery.
+- **Role-Based Geofencing:** Strictly segregated privileges restrict Station Masters to their assigned base, while granting Logistics and Authority roles cross-station oversight.
+- **Zero-Trust Security:** Secured via HTTP-only JWTs, robust session management, and SMTP-based OTP verification for high-clearance account creation and recovery.
+
+### 6. 📊 Dynamic Executive Reporting Engine
+
+- **On-Demand Intelligence:** Compiles targeted historical data (Energy, Environment, Logistics, or Overall) on the fly based on the user's domain scope and time window.
+- **Client-Side Export Processing:** Features an advanced `@react-pdf/renderer` engine to dynamically generate structured A4 PDFs and CSV tables for immediate off-station executive briefings without overloading the server.
 
 ## 🖥️ System Architecture & UI Tour
 
@@ -128,38 +138,55 @@ flowchart TD
 | Module | Route / Component | Description |
 | :--- | :--- | :--- |
 | **Tactical Dashboard** | `/dashboard` (`Dashboard.jsx`) | Real-time health scores, active blizzards, grid deficits, and priority alerts. |
-| **Data Export Engine** | `/reports` (`Reports.jsx`) | Configurable reporting matrix generating @react-pdf/renderer A4 dossiers and CSV tables. |
-| **Logistics Command** | `/logistics` (`Logistics.jsx`) | Requisition queues, multi-stage approval pipelines, and inventory tracking. |
+| **Requisitions Command** | `/requisitions` (`Requisitions.jsx`) | RBAC supply chain queues, multi-stage approval pipelines, and direct inventory tracking. |
+| **Data Export Engine** | `/reports` (`Reports.jsx`) | Configurable reporting matrix generating `@react-pdf/renderer` A4 dossiers and CSV tables. |
 | **Energy Matrix** | `/energy` (`Energy.jsx`) | Deep-dive telemetry for diesel generators, active loads, and battery arrays. |
-| **Environment Grid** | `/environment` (`Environment.jsx`) | Meteorological monitoring, thermal mapping, and atmospheric diagnostics. |
-| **System Auth** | `/auth` (`Auth.tsx`) | Secured gateway featuring OTP dispatch and strict token-based session validation. |
+| **Environment Grid** | `/environment` (`Environment.jsx`) | Meteorological monitoring, thermal mapping, and atmospheric blizzard diagnostics. |
+| **Infrastructure Health** | `/infrastructure` (`Infrastructure.jsx`) | Structural diagnostics, module-specific climates, and HVAC ventilation status. |
+| **System Auth** | `/auth` (`Auth.jsx`) | Secured gateway featuring SMTP OTP dispatch and strict JWT session validation. |
 
 </div>
 
 ## 🛠️ Technology Stack
 
-```
-SIH26060-PolarTwin/
+```text
+SIH26060/
 ├── backend/                 # Node.js + Express Simulation & API Server
+│   ├── config/              # Environment and database configurations
 │   ├── controllers/         # Telemetry generation, Auth logic, Report formatting
+│   ├── middleware/          # JWT authentication and request validation
 │   ├── models/              # Mongoose schemas (User, History, Logs)
+│   ├── routes/              # Secured REST API endpoints
 │   ├── simulation/          # The core algorithmic event-bus engine
-│   └── routes/              # Secured REST API endpoints
+│   ├── uploads/             # Static file storage for generated assets
+│   ├── utils/               # Helper functions and formatters
+│   ├── package.json         # Root unified dependencies
+│   └── server.js            # Main application entry point
 ├── frontend/                # React + Vite + Tailwind CSS v3
-│   ├── src/components/      # Frost-glass UI cards, Custom Dropdowns, Navbars
-│   ├── src/pages/           # Departmental dashboard views
-│   └── src/api/             # Unified service adapters and configuration hooks
-├── package.json             # Root unified dependencies
+│   ├── public/              # Static public assets
+│   ├── src/                 # React source code
+│   │   ├── assets/          # Images, SVGs, and global styles
+│   │   ├── components/      # Frost-glass UI cards, Custom Dropdowns, Navbars
+│   │   ├── pages/           # Departmental dashboard views
+│   │   ├── services/        # Unified API service adapters (Axios)
+│   │   ├── Layout.jsx       # Global application layout wrapper
+│   │   ├── main.jsx         # React DOM entry point
+│   │   └── scrollAnimation.js # Global intersection observer logic
+│   ├── index.html           # Main HTML template
+│   ├── vercel.json          # Vercel deployment routing configuration
+│   ├── package.json         # Root unified dependencies
+│   └── vite.config.js       # Vite bundler configuration
 └── README.md                # System documentation & technical specification
+
 ```
 
-### Core Technologies
+### 💻 Core Technologies
 
-- **Frontend**: React, Vite, Tailwind CSS, Lucide React, @react-pdf/renderer (for on-the-fly programmatic document generation).
-- **Backend API**: Node.js, Express.js, JWT, AppScript(OTP).
+- **Frontend**: React.js, Vite, Tailwind CSS v3, Lucide Icons, `@react-pdf/renderer` (for on-the-fly programmatic document generation).
+- **Backend & Security**: Node.js, Express.js, JWT (HTTP-Only session management), bcrypt (cryptographic password hashing), Google Apps Script (SMTP OTP dispatch).
 - **Database & State**: MongoDB Atlas, Mongoose ODM, React Context API.
-- **Architecture**: Global Event Bus for simulated sensor-to-alert propagation.
-- **DevOps & Deployment**: Vercel (Client Edge Deployment), Render (Server Deployment).
+- **Architecture**: Event-Driven Simulation Engine, strict REST API segregation (Fast-Lane vs. Slow-Lane).
+- **DevOps & Tools**: Vercel (Frontend Edge Deployment), Render (Backend Deployment), Postman (API Documentation & Testing), npm.
 
 ## 🚀 Quick Start Guide
 
@@ -220,14 +247,36 @@ npm run dev
 
 ## 📡 REST API Reference
 
+The Polar Twin backend is strictly segregated into rapid telemetry streams ("Fast Lane") and standard transactional operations ("Slow Lane") to ensure zero latency during critical alerts. All secure routes require `HTTP-Only` JWTs and strict RBAC authorization.
+
+### 🔐 Authentication & Security (`/api/auth`)
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `POST` | `/api/users/login` | Authenticate operator and issue secure HTTP-only JWT |
-| `POST` | `/api/users/send-registration-otp` | Dispatch 6-digit verification code via SMTP |
-| `GET` | `/api/telemetry/{stationId}/live` | Retrieve live simulated operational data (Energy/Env/Infra) |
-| `GET` | `/api/reports/{stationId}` | Fetch comprehensive historical data for PDF/CSV generation |
-| `GET` | `/api/logistics/{stationId}` | Query active supply chains and local inventory ledgers |
-| `PATCH` | `/api/logistics/update-status` | Progress a shipment through the RBAC approval pipeline |
+| `POST` | `/api/auth/login` | Authenticate operator and issue secure HTTP-only JWT |
+| `POST` | `/api/auth/send-registration-otp` | Dispatch 6-digit email verification code via SMTP |
+| `POST` | `/api/auth/register` | Register new personnel with OTP verification & avatar upload |
+| `PUT` | `/api/auth/update-password` | Securely update operator credentials |
+
+### ⚡ Telemetry Simulation - Fast Lane (`/api/telemetry`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/telemetry/{stationId}/live` | Retrieve full live simulated data (Energy, Env, Infra) |
+| `GET` | `/api/telemetry/{stationId}/{section}/live` | Fetch isolated live metrics for a specific subsystem |
+
+### 📦 Logistics & Requisitions - Slow Lane (`/api/orders` & `/api/logistics`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/logistics/{stationId}/data` | Fetch comprehensive station inventory ledgers and stock levels |
+| `GET` | `/api/orders/{stationId}` | Query all active and historical supply requisitions |
+| `POST` | `/api/orders/{stationId}/create` | Submit a formal supply requisition (Station Master) |
+| `PUT` | `/api/orders/{stationId}/{orderId}/review` | Authority RBAC workflow to approve or reject requisitions |
+| `PUT` | `/api/orders/{stationId}/{orderId}/deliver` | Update shipment transit status and finalize station delivery |
+| `POST` | `/api/orders/{stationId}/direct-entry` | Direct inventory modification (bypass) for Logistics Operators |
+
+### 📊 Executive Reporting (`/api/reports`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/reports/{stationId}?report_type=x` | Compile historical operational data for A4 PDF and CSV exports |
 
 ## 👥 Hackathon Team & Acknowledgements
 
@@ -250,7 +299,6 @@ npm run dev
 - 🖥️ **Narayan Kumar Jha** ([@narayan-nkj](https://github.com/narayan-nkj)) - **Frontend Architecture & UI/UX Design Specialist**
 - 📊 **Ahana** ([@I-Lawrence](https://github.com/I-Lawrence)) - **Telemetry Processing & Automated Reporting Specialist**
 
-<br>
 <br>
 
 ---
