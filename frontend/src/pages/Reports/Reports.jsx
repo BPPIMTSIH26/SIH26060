@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import { FileText, Loader2, DownloadCloud, Info } from 'lucide-react';
+import { useOutletContext } from "react-router-dom";
+import { FileText, Loader2, DownloadCloud, Info, Layers } from 'lucide-react';
 import { useToast } from "../../components/context/ToastContext";
 import { reportAPI } from "../../services/reportAPI";
 import CustomDropdown from "../../components/context/CustomDropdown";
 import ReportView from "./components/ReportView";
 
-export default function Reports({ activeStation = "Maitri" }) {
+export default function Reports() {
+  // Dynamically pull the active station from the global layout context
+  const { activeStation = "Maitri" } = useOutletContext() || {};
+  
   const [reportType, setReportType] = useState('daily');
   const [reportCategory, setReportCategory] = useState('overall');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -21,7 +25,7 @@ export default function Reports({ activeStation = "Maitri" }) {
 
   const reportTypeOptions = [
     { label: "Daily Operations (Last 24h)", value: "daily" },
-    { label: "Weekly Analysis (7 Days)", value: "weekly" },
+    { label: "Weekly Analysis (7 Days)", value: "weekly" }, 
     { label: "Monthly Rollup (30 Days)", value: "monthly" }
   ];
 
@@ -36,10 +40,11 @@ export default function Reports({ activeStation = "Maitri" }) {
   const handleGenerateReport = async () => {
     setIsGenerating(true);
     try {
+      // API call now naturally uses the globally active station
       const response = await reportAPI.getStationReport(activeStation, reportType, reportCategory);
       setReportData(response.data);
       setShowModal(true);
-      showToast(`${reportCategory.charAt(0).toUpperCase() + reportCategory.slice(1)} report compiled successfully.`, "success");
+      showToast(`${activeStation} ${reportCategory.charAt(0).toUpperCase() + reportCategory.slice(1)} report compiled successfully.`, "success");
     } catch (error) {
       console.error("Report Error:", error);
       showToast(error.message || "Failed to generate report. Check connection.", "error");
@@ -67,7 +72,7 @@ export default function Reports({ activeStation = "Maitri" }) {
         {/* PAGE GRID LAYOUT */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
           
-          {/* LEFT COLUMN: EXPORT CONFIGURATOR (Spans 2 columns on large screens) */}
+          {/* LEFT COLUMN: EXPORT CONFIGURATOR */}
           <div className="xl:col-span-2 rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-6 sm:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-950/60">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight mb-6 flex items-center gap-2">
               <FileText className="w-5 h-5 text-cyan-500" />
@@ -79,7 +84,7 @@ export default function Reports({ activeStation = "Maitri" }) {
                 {/* Domain Scope */}
                 <div>
                   <label className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">
-                    Domain Scope
+                    <Layers className="w-4 h-4" /> Domain Scope
                   </label>
                   <CustomDropdown 
                       name="reportCategory"
@@ -93,7 +98,7 @@ export default function Reports({ activeStation = "Maitri" }) {
                 {/* Time Window */}
                 <div>
                   <label className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">
-                    Time Window
+                    <FileText className="w-4 h-4" /> Time Window
                   </label>
                   <CustomDropdown 
                       name="reportType"

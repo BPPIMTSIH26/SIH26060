@@ -1,13 +1,23 @@
 /* eslint-disable react-hooks/static-components */
 import { CheckCircle2, AlertTriangle, AlertOctagon, ShieldAlert, Zap, Droplet, Wind, Thermometer, Box, Activity, Home } from 'lucide-react';
 
+// ==========================================
+// UTILITY: FORMAT NUMBERS TO 2 DECIMALS MAX
+// ==========================================
+const formatVal = (val) => {
+  if (val === null || val === undefined) return 0;
+  const num = Number(val);
+  return isNaN(num) ? val : Number(num.toFixed(2));
+};
+
 const ProgressBar = ({ label, value, colorClass, suffix = "%", max = 100 }) => {
-  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+  const formattedValue = formatVal(value);
+  const percentage = Math.min(Math.max((formattedValue / max) * 100, 0), 100);
   return (
     <div className="mb-4">
       <div className="flex justify-between items-end mb-1.5">
         <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{label}</span>
-        <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100">{value}{suffix}</span>
+        <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100">{formattedValue}{suffix}</span>
       </div>
       <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-1000 ${colorClass}`} style={{ width: `${percentage}%` }}></div>
@@ -34,7 +44,7 @@ const StatCard = ({ title, value, unit, colorClass, indicatorColorClass }) => (
     {indicatorColorClass && <div className={`absolute top-0 left-0 w-full h-1 ${indicatorColorClass}`}></div>}
     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{title}</p>
     <p className={`text-3xl font-black mt-2 font-mono ${colorClass || 'text-slate-900 dark:text-white'}`}>
-      {value}{unit && <span className="text-lg text-slate-400 ml-1">{unit}</span>}
+      {formatVal(value)}{unit && <span className="text-lg text-slate-400 ml-1">{unit}</span>}
     </p>
   </div>
 );
@@ -117,9 +127,9 @@ export default function VisualSummaryTab({ reportData, reportCategory }) {
             <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
               <h3 className="text-xs font-bold tracking-widest text-slate-400 mb-6 uppercase flex items-center gap-2"><Wind className="w-4 h-4 text-blue-500" /> Environment & Logistics</h3>
               <div className="space-y-3">
-                <TelemetryItem icon={<Thermometer className="w-4 h-4 text-blue-500" />} label="Exterior Temp" value={`${reportData.environment_analysis?.metrics?.outside_temp_c || 0}°C`} subValue="Absolute" />
-                <TelemetryItem icon={<Wind className="w-4 h-4 text-slate-400" />} label="Wind Velocity" value={`${reportData.environment_analysis?.metrics?.wind_speed_kmh || 0} km/h`} subValue={reportData.environment_analysis?.metrics?.blizzard_active ? "BLIZZARD CONDITIONS" : "Clear"} />
-                <TelemetryItem icon={<Droplet className="w-4 h-4 text-amber-600" />} label="Food Stock Status" value={`${reportData.logistics_analysis?.supplies?.food?.current_stock_days || 0} Days`} subValue="Days Remaining" />
+                <TelemetryItem icon={<Thermometer className="w-4 h-4 text-blue-500" />} label="Exterior Temp" value={`${formatVal(reportData.environment_analysis?.metrics?.outside_temp_c)}°C`} subValue="Absolute" />
+                <TelemetryItem icon={<Wind className="w-4 h-4 text-slate-400" />} label="Wind Velocity" value={`${formatVal(reportData.environment_analysis?.metrics?.wind_speed_kmh)} km/h`} subValue={reportData.environment_analysis?.metrics?.blizzard_active ? "BLIZZARD CONDITIONS" : "Clear"} />
+                <TelemetryItem icon={<Droplet className="w-4 h-4 text-amber-600" />} label="Food Stock Status" value={`${formatVal(reportData.logistics_analysis?.supplies?.food?.current_stock_days)} Days`} subValue="Days Remaining" />
               </div>
             </div>
           </div>
@@ -187,7 +197,7 @@ export default function VisualSummaryTab({ reportData, reportCategory }) {
           <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <h3 className="text-xs font-bold tracking-widest text-slate-400 mb-6 uppercase flex items-center gap-2"><Home className="w-4 h-4 text-purple-500" /> Module Status Overview</h3>
             <div className="space-y-3">
-              <TelemetryItem icon={<Box className="w-4 h-4 text-slate-400" />} label="Storage Module" value={`${reportData.infrastructure_analysis?.modules?.storage?.average_temperature_c || 0}°C`} subValue={`Status: ${reportData.infrastructure_analysis?.modules?.storage?.status || 'Unknown'}`} />
+              <TelemetryItem icon={<Box className="w-4 h-4 text-slate-400" />} label="Storage Module" value={`${formatVal(reportData.infrastructure_analysis?.modules?.storage?.average_temperature_c)}°C`} subValue={`Status: ${reportData.infrastructure_analysis?.modules?.storage?.status || 'Unknown'}`} />
               <TelemetryItem icon={<Activity className="w-4 h-4 text-slate-400" />} label="HVAC System" value={reportData.infrastructure_analysis?.hvac_system?.status?.toUpperCase() || 'NOMINAL'} subValue="Main Ventilation" />
             </div>
           </div>

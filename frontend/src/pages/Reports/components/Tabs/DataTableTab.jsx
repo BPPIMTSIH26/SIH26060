@@ -1,17 +1,24 @@
+// Utility to format numbers to a maximum of 2 decimal places
+const formatVal = (val) => {
+    if (val === null || val === undefined) return 0;
+    const num = Number(val);
+    return isNaN(num) ? val : Number(num.toFixed(2));
+};
+
 export default function DataTableTab({ reportData, reportCategory }) {
     const getTableRows = () => {
         const allRows = [
-            { cat: 'Energy', path: 'energy_analysis.metrics.average_generation_kw', val: reportData.energy_analysis?.metrics?.average_generation_kw || 0, color: 'text-emerald-500' },
-            { cat: 'Energy', path: 'energy_analysis.metrics.average_load_kw', val: reportData.energy_analysis?.metrics?.average_load_kw || 0, color: 'text-emerald-500' },
-            { cat: 'Energy', path: 'energy_analysis.metrics.battery_charge_percent', val: reportData.energy_analysis?.metrics?.battery_charge_percent || 0, color: 'text-emerald-500' },
-            { cat: 'Environment', path: 'environment_analysis.metrics.outside_temp_c', val: reportData.environment_analysis?.metrics?.outside_temp_c || 0, color: 'text-blue-500' },
-            { cat: 'Environment', path: 'environment_analysis.metrics.wind_speed_kmh', val: reportData.environment_analysis?.metrics?.wind_speed_kmh || 0, color: 'text-blue-500' },
-            { cat: 'Environment', path: 'environment_analysis.metrics.visibility_meters', val: reportData.environment_analysis?.metrics?.visibility_meters || 0, color: 'text-blue-500' },
-            { cat: 'Logistics', path: 'logistics_analysis.supplies.food.current_stock_days', val: reportData.logistics_analysis?.supplies?.food?.current_stock_days || 0, color: 'text-amber-500' },
-            { cat: 'Logistics', path: 'logistics_analysis.supplies.medical.current_stock_percent', val: reportData.logistics_analysis?.supplies?.medical?.current_stock_percent || 0, color: 'text-amber-500' },
-            { cat: 'Logistics', path: 'logistics_analysis.personnel.on_station', val: reportData.logistics_analysis?.personnel?.on_station || 0, color: 'text-amber-500' },
-            { cat: 'Infrastructure', path: 'system_health_breakdown.infrastructure_score', val: reportData.system_health_breakdown?.infrastructure_score || 0, color: 'text-purple-500' },
-            { cat: 'Infrastructure', path: 'infrastructure_analysis.modules.main_lab.average_temperature_c', val: reportData.infrastructure_analysis?.modules?.main_lab?.average_temperature_c || 0, color: 'text-purple-500' },
+            { cat: 'Energy', path: 'energy_analysis.metrics.average_generation_kw', val: formatVal(reportData.energy_analysis?.metrics?.average_generation_kw), color: 'text-emerald-500' },
+            { cat: 'Energy', path: 'energy_analysis.metrics.average_load_kw', val: formatVal(reportData.energy_analysis?.metrics?.average_load_kw), color: 'text-emerald-500' },
+            { cat: 'Energy', path: 'energy_analysis.metrics.battery_charge_percent', val: formatVal(reportData.energy_analysis?.metrics?.battery_charge_percent), color: 'text-emerald-500' },
+            { cat: 'Environment', path: 'environment_analysis.metrics.outside_temp_c', val: formatVal(reportData.environment_analysis?.metrics?.outside_temp_c), color: 'text-blue-500' },
+            { cat: 'Environment', path: 'environment_analysis.metrics.wind_speed_kmh', val: formatVal(reportData.environment_analysis?.metrics?.wind_speed_kmh), color: 'text-blue-500' },
+            { cat: 'Environment', path: 'environment_analysis.metrics.visibility_meters', val: formatVal(reportData.environment_analysis?.metrics?.visibility_meters), color: 'text-blue-500' },
+            { cat: 'Logistics', path: 'logistics_analysis.supplies.food.current_stock_days', val: formatVal(reportData.logistics_analysis?.supplies?.food?.current_stock_days), color: 'text-amber-500' },
+            { cat: 'Logistics', path: 'logistics_analysis.supplies.medical.current_stock_percent', val: formatVal(reportData.logistics_analysis?.supplies?.medical?.current_stock_percent), color: 'text-amber-500' },
+            { cat: 'Logistics', path: 'logistics_analysis.personnel.on_station', val: formatVal(reportData.logistics_analysis?.personnel?.on_station), color: 'text-amber-500' },
+            { cat: 'Infrastructure', path: 'system_health_breakdown.infrastructure_score', val: formatVal(reportData.system_health_breakdown?.infrastructure_score), color: 'text-purple-500' },
+            { cat: 'Infrastructure', path: 'infrastructure_analysis.modules.main_lab.average_temperature_c', val: formatVal(reportData.infrastructure_analysis?.modules?.main_lab?.average_temperature_c), color: 'text-purple-500' },
         ];
         if (reportCategory === 'overall') return allRows;
         return allRows.filter(r => r.cat.toLowerCase() === reportCategory);
