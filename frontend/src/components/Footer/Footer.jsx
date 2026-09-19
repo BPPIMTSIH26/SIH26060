@@ -33,12 +33,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-600 dark:text-gray-400">
         
         <p className="text-xs sm:text-sm mb-2">
-          This website belongs to <strong className="text-gray-900 dark:text-gray-200">National Centre for Polar and Ocean Research (NCPOR)</strong>,<br className="hidden sm:block"/>
+          This website belongs to <strong className="text-gray-900 dark:text-gray-200">National Centre for Polar and Ocean Research (NCPOR)*</strong>,<br className="hidden sm:block"/>
           Ministry of Earth Sciences, Government of India.
         </p>
 
         <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-500 mb-5 leading-relaxed">
-          Designed, Developed and Hosted by <strong className="text-gray-800 dark:text-gray-300">National Informatics Centre (NIC)</strong>,<br className="hidden sm:block"/>
+          Designed, Developed and Hosted by <strong className="text-gray-800 dark:text-gray-300">National Informatics Centre (NIC)*</strong>,<br className="hidden sm:block"/>
           Ministry of Electronics & Information Technology, Government of India.
         </p>
 

@@ -1,0 +1,120 @@
+{
+  "report_id": "REPORT-2026-09-19-842",
+  "station_id": "Maitri",
+  "station_name": "Maitri Antarctic Research Station",
+  "report_metadata": {
+    "report_type": "daily",
+    "generated_at": "2026-09-19T11:54:00Z",
+    "period_start": "2026-09-18T11:54:00Z",
+    "period_end": "2026-09-19T11:54:00Z",
+    "total_days": 1,
+    "generated_by": "System",
+    "generated_for": "Higher Authority"
+  },
+  "executive_summary": {
+    "overall_health_score": 85,
+    "health_trend": "stable",
+    "operational_status": "YELLOW",
+    "critical_alerts_count": 0,
+    "warning_alerts_count": 2,
+    "info_alerts_count": 0,
+    "key_highlights": [
+      "Power status: Generation 185 kW vs Load 205.5 kW",
+      "Fuel primary tank at 76.5% - ~18.5 days remaining",
+      "Infrastructure modules operational status nominal"
+    ],
+    "recommended_actions": [
+      "Activate Generator 2 or shed non-critical load",
+      "Review incoming logistics shipments schedule",
+      "Maintain standard environmental safety protocols"
+    ]
+  },
+  "system_health_breakdown": {
+    "infrastructure_score": 96,
+    "infrastructure_status": "GREEN",
+    "energy_score": 65,
+    "energy_status": "YELLOW",
+    "environment_score": 95,
+    "environment_status": "GREEN",
+    "logistics_score": 90,
+    "logistics_status": "GREEN"
+  },
+  "alerts_log": [
+    {
+      "severity": "warning",
+      "message": "Power deficit active: Generation (185 kW) < Load (205.5 kW)",
+      "affected_system": "Energy"
+    },
+    {
+      "severity": "warning",
+      "message": "Wind speeds elevating past 60km/h",
+      "affected_system": "Environment"
+    }
+  ],
+  "energy_analysis": {
+    "period": "2026-09-19",
+    "metrics": {
+      "average_generation_kw": 185.0,
+      "average_load_kw": 205.5,
+      "net_deficit_kw": -20.5,
+      "battery_charge_percent": 92.5,
+      "backup_hours_remaining": 3.6
+    },
+    "fuel_status": {
+      "start_liters": 38500,
+      "end_liters": 38250,
+      "fuel_remaining_days": 18.5,
+      "fuel_level_percent": 76.5
+    },
+    "generator_status": {
+      "gen_1": { "status": "ACTIVE" },
+      "gen_2": { "status": "STANDBY" }
+    }
+  },
+  "infrastructure_analysis": {
+    "period": "2026-09-19",
+    "modules": {
+      "living_quarters": {
+        "average_temperature_c": 18.6,
+        "status": "operational",
+        "alerts": 0
+      },
+      "main_lab": {
+        "average_temperature_c": 19.1,
+        "status": "operational",
+        "alerts": 0
+      },
+      "storage": {
+        "average_temperature_c": -5.1,
+        "status": "operational",
+        "alerts": 0
+      }
+    },
+    "hvac_system": { "status": "nominal" }
+  },
+  "environment_analysis": {
+    "period": "2026-09-19",
+    "metrics": {
+      "outside_temp_c": -35.2,
+      "wind_speed_kmh": 62.5,
+      "visibility_meters": 3200,
+      "blizzard_active": false
+    }
+  },
+  "logistics_analysis": {
+    "supplies": {
+      "food": { "current_stock_days": 45, "status": "adequate" },
+      "medical": { "current_stock_percent": 87, "status": "adequate" },
+      "fuel_emergency_reserve": { "current_liters": 10000, "status": "full" }
+    },
+    "personnel": { "on_station": 12 },
+    "incoming_shipments": []
+  },
+  "recommendations": {
+    "immediate": [ "Resolve power deficit immediately." ],
+    "short_term": [ "Monitor meteorological trends for upcoming shifts." ]
+  },
+  "trends": {
+    "historical_data": []
+  }
+}
