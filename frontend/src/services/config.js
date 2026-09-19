@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 // src/api/config.js
 
-export const USE_MOCK_API = true; // Set to true to use mock API responses for testing without a backend
+export const USE_MOCK_API = false; // Set to true to use mock API responses for testing without a backend
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'; 
 export const delay = (ms = 800) => new Promise(resolve => setTimeout(resolve, ms));
 
