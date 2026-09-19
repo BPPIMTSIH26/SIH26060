@@ -1,147 +1,163 @@
 import { useState } from 'react';
-import { FileDown, Calendar, Filter, FileText, Database, Activity, Wind, Download, Beaker } from 'lucide-react';
+import { FileText, Loader2, DownloadCloud, Info } from 'lucide-react';
+import { useToast } from "../../components/context/ToastContext";
+import { reportAPI } from "../../services/reportAPI";
+import CustomDropdown from "../../components/context/CustomDropdown";
+import ReportView from "./components/ReportView";
 
-export default function Reports() {
-    const [dateRange, setDateRange] = useState('Last 7 Days');
+export default function Reports({ activeStation = "Maitri" }) {
+  const [reportType, setReportType] = useState('daily');
+  const [reportCategory, setReportCategory] = useState('overall');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  
+  const showToast = useToast();
 
-    return (
-        <div className="min-h-screen bg-amber-50/30 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 font-sans transition-colors duration-200">
-            <div className="max-w-[1500px] mx-auto">
+  const storedUser = localStorage.getItem("polar_twin_user");
+  const user = storedUser && storedUser !== "undefined" 
+    ? JSON.parse(storedUser) 
+    : { fullName: "Operator", role: "operator" };
 
-                {/* HEADER SECTION */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-                            Mission Reports & Data Export
-                        </h1>
-                        <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
-                            Generate, filter, and download historical telemetry and research data.
-                        </p>
-                    </div>
+  const reportTypeOptions = [
+    { label: "Daily Operations (Last 24h)", value: "daily" },
+    { label: "Weekly Analysis (7 Days)", value: "weekly" },
+    { label: "Monthly Rollup (30 Days)", value: "monthly" }
+  ];
 
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
-                            <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-500" />
-                            {dateRange}
-                        </button>
-                        <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold shadow-md transition-all active:scale-95">
-                            <FileDown className="w-4 h-4" />
-                            Export Master Log
-                        </button>
-                    </div>
-                </div>
+  const reportCategoryOptions = [
+    { label: "Comprehensive (All Systems)", value: "overall" },
+    { label: "Energy & Power Grid", value: "energy" },
+    { label: "Environmental Telemetry", value: "environment" },
+    { label: "Logistics & Supply Chain", value: "logistics" },
+    { label: "Infrastructure & Health", value: "infrastructure" }
+  ];
 
-                {/* MAIN GRID */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await reportAPI.getStationReport(activeStation, reportType, reportCategory);
+      setReportData(response.data);
+      setShowModal(true);
+      showToast(`${reportCategory.charAt(0).toUpperCase() + reportCategory.slice(1)} report compiled successfully.`, "success");
+    } catch (error) {
+      console.error("Report Error:", error);
+      showToast(error.message || "Failed to generate report. Check connection.", "error");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-                    {/* LEFT COLUMN: Data Selection (Takes up 2 columns on large screens) */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-colors">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <Database className="w-5 h-5 text-cyan-500" />
-                                    Available Data Modules
-                                </h2>
-                                <button className="text-sm text-gray-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 flex items-center gap-1 transition-colors">
-                                    <Filter className="w-4 h-4" /> Filter Modules
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {/* Placeholder Modules - We will hook these up to your real data later */}
-                                <DataCard
-                                    title="Atmospheric & Weather"
-                                    icon={<Wind className="w-5 h-5 text-blue-500 dark:text-blue-400" />}
-                                    desc="Wind speed, temperature drifts, UV index, and blizzard history."
-                                />
-                                <DataCard
-                                    title="Telemetry & Power Grid"
-                                    icon={<Activity className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />}
-                                    desc="Generator load, battery discharge rates, and HVAC performance."
-                                />
-                                <DataCard
-                                    title="Scientific Research"
-                                    icon={<Beaker className="w-5 h-5 text-purple-500 dark:text-purple-400" />}
-                                    desc="Glaciology, oceanography, and atmospheric chemistry readings."
-                                />
-                                <DataCard
-                                    title="Logistics & Inventory"
-                                    icon={<FileText className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
-                                    desc="Fuel burn rates, food consumption, and ledger history."
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* RIGHT COLUMN: Recent Downloads / History */}
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-colors">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                                Recent Exports
-                            </h2>
-
-                            <div className="space-y-2">
-                                {/* Placeholder History Items */}
-                                <RecentItem name="Maitri_Q3_Logistics.csv" date="Today, 14:30 IST" size="1.2 MB" />
-                                <RecentItem name="Bharati_Science_Data.xlsx" date="Yesterday, 09:15 IST" size="4.5 MB" />
-                                <RecentItem name="Env_Telemetry_Weekly.json" date="Sep 15, 18:45 IST" size="890 KB" />
-                            </div>
-
-                            <button className="w-full mt-6 py-2.5 rounded-lg border border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                                View Complete History
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
+  return (
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 font-sans transition-colors duration-300 bg-transparent">
+      
+      <div className="max-w-7xl mx-auto space-y-8 print-hide">
+        
+        {/* PAGE HEADER */}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <DownloadCloud className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
+            Data Export & Reports
+          </h1>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">
+            Configure and compile historical operational data for <strong className="text-cyan-600 dark:text-cyan-400">{activeStation}</strong>.
+          </p>
         </div>
-    );
-}
 
-// ==========================================
-// SUB-COMPONENTS
-// ==========================================
-
-function DataCard({ title, icon, desc }) {
-    return (
-        <div className="p-5 rounded-xl border border-amber-100 dark:border-slate-800 bg-amber-50/50 dark:bg-slate-800/30 hover:border-cyan-300 dark:hover:border-cyan-700/50 hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer group">
-            <div className="flex items-center gap-3 mb-3">
-                <div className="p-2.5 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 group-hover:shadow-md transition-shadow">
-                    {icon}
+        {/* PAGE GRID LAYOUT */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
+          
+          {/* LEFT COLUMN: EXPORT CONFIGURATOR (Spans 2 columns on large screens) */}
+          <div className="xl:col-span-2 rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-6 sm:p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-950/60">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight mb-6 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-cyan-500" />
+              Report Configuration Matrix
+            </h2>
+            
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Domain Scope */}
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                    Domain Scope
+                  </label>
+                  <CustomDropdown 
+                      name="reportCategory"
+                      value={reportCategory}
+                      onChange={(e) => setReportCategory(e.target.value)}
+                      options={reportCategoryOptions}
+                  />
+                  <p className="text-[11px] text-slate-500 mt-2 font-medium">Select specific subsystem or full station overview.</p>
                 </div>
-                <h3 className="font-bold text-gray-900 dark:text-slate-100 group-hover:text-cyan-700 dark:group-hover:text-cyan-400 transition-colors">
-                    {title}
-                </h3>
+
+                {/* Time Window */}
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">
+                    Time Window
+                  </label>
+                  <CustomDropdown 
+                      name="reportType"
+                      value={reportType}
+                      onChange={(e) => setReportType(e.target.value)}
+                      options={reportTypeOptions}
+                  />
+                  <p className="text-[11px] text-slate-500 mt-2 font-medium">Determines the historical look-back period.</p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800/60">
+                <button 
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider text-white shadow-sm shadow-cyan-500/20 transition-all active:scale-[0.98] bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-600/50 flex justify-center items-center gap-2"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    "Compile & Preview Report"
+                  )}
+                </button>
+              </div>
             </div>
-            <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                {desc}
-            </p>
-        </div>
-    );
-}
+          </div>
 
-function RecentItem({ name, date, size }) {
-    return (
-        <div className="flex items-center justify-between p-3 rounded-xl hover:bg-amber-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer border border-transparent hover:border-amber-200/60 dark:hover:border-slate-700 group">
-            <div className="flex items-center gap-3 overflow-hidden">
-                <div className="p-2 bg-gray-50 dark:bg-slate-800 rounded-lg text-gray-400 dark:text-slate-500 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
-                    <FileText className="w-4 h-4" />
-                </div>
-                <div className="truncate">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-slate-200 truncate group-hover:text-cyan-700 dark:group-hover:text-cyan-400 transition-colors">
-                        {name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-[11px] font-medium text-gray-500 dark:text-slate-500">{date}</p>
-                        <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-slate-600"></span>
-                        <p className="text-[11px] font-medium text-gray-400 dark:text-slate-500">{size}</p>
-                    </div>
-                </div>
+          {/* RIGHT COLUMN: INFORMATION/GUIDELINES */}
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 backdrop-blur-md p-6 sm:p-8 dark:border-slate-800/80 dark:bg-slate-900/40">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight mb-4 flex items-center gap-2 uppercase">
+              <Info className="w-4 h-4 text-amber-500" /> Export Guidelines
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                <strong className="text-slate-900 dark:text-slate-200 block mb-1">Confidentiality Notice</strong>
+                Generated reports contain sensitive telemetry. Distribute only over secured NCPOR channels.
+              </div>
+              
+              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                <strong className="text-slate-900 dark:text-slate-200 block mb-1">Export Formats</strong>
+                Once compiled, you can preview the data visually, download structured <strong className="text-cyan-600 dark:text-cyan-400">CSV</strong> tables for local database ingestion, or export a formal <strong className="text-cyan-600 dark:text-cyan-400">PDF</strong> for executive briefing.
+              </div>
+
+              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                <strong className="text-slate-900 dark:text-slate-200 block mb-1">Domain Filtering</strong>
+                Selecting specific domains (e.g., Energy, Logistics) will isolate those metrics in the final CSV/JSON payloads, reducing file size.
+              </div>
             </div>
-            <button className="p-2 text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                <Download className="w-4 h-4" />
-            </button>
+          </div>
+
         </div>
-    );
+      </div>
+
+      {/* Reusable View Component */}
+      <ReportView 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)} 
+        reportData={reportData} 
+        reportType={reportType}
+        reportCategory={reportCategory}
+        activeStation={activeStation} 
+        user={user} 
+      />
+    </div>
+  );
 }

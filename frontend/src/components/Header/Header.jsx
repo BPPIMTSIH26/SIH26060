@@ -41,7 +41,7 @@ const SatLinkStatus = ({ isMobile }) => {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
           <span className={`${dotInnerClasses} bg-emerald-500`}></span>
         </span>
-        <span className={`${textClasses} text-emerald-700 dark:text-emerald-400`}>SAT_LINK</span>
+        <span className={`${textClasses} text-emerald-700 dark:text-emerald-400`}>SAT LINK</span>
       </div>
     );
   }
@@ -52,6 +52,54 @@ const SatLinkStatus = ({ isMobile }) => {
         <span className={`${dotInnerClasses} bg-red-500`}></span>
       </span>
       <span className={`${textClasses} text-red-700 dark:text-red-400`}>OFFLINE</span>
+    </div>
+  );
+};
+
+// ==========================================
+// REUSABLE MISSION CLOCK COMPONENT
+// ==========================================
+const MissionClock = ({ isMobile }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+      return () => clearInterval(timer);
+  }, []);
+
+  // Use Intl.DateTimeFormat to strictly enforce time zones
+  const istFormatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata', // Forces Indian Standard Time
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+
+  // Maitri station uses UTC+3:30. The closest standard timezone for this is 'Asia/Tehran' (when not in DST).
+  // Alternatively, you can calculate the exact offset from UTC time.
+  const utcTime = currentTime.getTime() + (currentTime.getTimezoneOffset() * 60000);
+  const stationTime = new Date(utcTime + (3.5 * 3600000)); // Adds 3.5 hours to UTC
+
+  const istTimeStr = istFormatter.format(currentTime);
+  const stationTimeStr = stationTime.toISOString().substring(11, 19);
+
+  if (isMobile) {
+    return (
+      <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+        <span>IST: <span className="text-gray-900 dark:text-slate-200">{istTimeStr}</span></span>|
+        <span>STN: <span className="text-cyan-700 dark:text-cyan-400">{stationTimeStr}</span></span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hidden lg:flex items-center gap-4 font-mono text-sm font-bold tracking-widest text-slate-600 dark:text-slate-400 shrink-0">
+      <div className="flex items-center gap-2 border-r border-gray-300 dark:border-gray-600 pr-4">
+        <span className="text-gray-500 dark:text-slate-500">IST</span>
+        <span className="text-gray-900 dark:text-slate-200">{istTimeStr}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-cyan-600 dark:text-cyan-500">STN</span>
+        <span className="text-cyan-700 dark:text-cyan-400">{stationTimeStr}</span>
+      </div>
     </div>
   );
 };
@@ -72,7 +120,6 @@ const navLinks = [
 export default function Header({ alerts = [], lastUpdate = "Just now", activeStation, setActiveStation }) {
   const [userOpen, setUserOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const dropdownRef = useRef(null);
   const navigate = useNavigate(); 
   const showToast = useToast();
@@ -113,23 +160,13 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 3. Live Mission Clock (IST and UTC+03:30)
-  useEffect(() => {
-      const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-      return () => clearInterval(timer);
-  }, []);
-
-  const utc = currentTime.getTime() + (currentTime.getTimezoneOffset() * 60000);
-  const istTimeStr = new Date(utc + (3600000 * 5.5)).toISOString().substring(11, 19);
-  const stationTimeStr = new Date(utc + (3600000 * 3.5)).toISOString().substring(11, 19);
-
-  // 4. Format the role
+  // 3. Format the role
   const formatRole = (roleString) => {
       if (!roleString) return "Operator";
       return roleString.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  // 5. Handle Logout
+  // 4. Handle Logout
   const handleLogout = () => {
       setUserOpen(false);
       localStorage.removeItem("polar_twin_user"); 
@@ -141,7 +178,7 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
       navigate("/auth", { replace: true }); 
   };
 
-  // 6. Custom toggle handler to save preference in LocalStorage
+  // 5. Custom toggle handler to save preference in LocalStorage
   const handleStationToggle = (station) => {
       localStorage.setItem("polar_twin_selected_station", station);
       setActiveStation(station);
@@ -191,17 +228,8 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
             <Logo/>
           </div>
 
-          {/* 2. CENTER-LEFT: Clocks */}
-          <div className="hidden lg:flex items-center gap-4 font-mono text-sm font-bold tracking-widest text-slate-600 dark:text-slate-400 shrink-0">
-            <div className="flex items-center gap-2 border-r border-gray-300 dark:border-gray-600 pr-4">
-              <span className="text-gray-500 dark:text-slate-500">IST</span>
-              <span className="text-gray-900 dark:text-slate-200">{istTimeStr}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-cyan-600 dark:text-cyan-500">STN</span>
-              <span className="text-cyan-700 dark:text-cyan-400">{stationTimeStr}</span>
-            </div>
-          </div>
+          {/* 2. CENTER-LEFT: Clocks (USING REUSABLE COMPONENT) */}
+          <MissionClock isMobile={false} />
 
           {/* 3. CENTER: Station Toggle */}
           <div className="hidden sm:flex shrink-0 justify-center">
@@ -327,10 +355,10 @@ export default function Header({ alerts = [], lastUpdate = "Just now", activeSta
             
             {/* Clocks & Sat Status for Mobile */}
             <div className="flex w-full justify-between items-center px-1 pb-1 font-mono text-xs tracking-widest font-semibold">
-               <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                  <span>IST: <span className="text-gray-900 dark:text-slate-200">{istTimeStr}</span></span>|
-                  <span>STN: <span className="text-cyan-700 dark:text-cyan-400">{stationTimeStr}</span></span>
-               </div>
+               
+               {/* USING REUSABLE COMPONENT FOR MOBILE */}
+               <MissionClock isMobile={true} />
+               
                {/* USING REUSABLE COMPONENT FOR MOBILE */}
                <SatLinkStatus isMobile={true} />
             </div>
