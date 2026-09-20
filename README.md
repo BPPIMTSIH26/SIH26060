@@ -45,12 +45,13 @@ This system provides real-time monitoring, Rule-Based Risk & Alert System, and r
 
 | Attribute | Specification Details |
 | :--- | :--- |
-| **Problem Statement ID** | **SIH26060** |
-| **Problem Statement Title** | **Digital Twin Simulation Engine for Interdependent Antarctic Station Operations** |
-| **Category** | Software / Remote Monitoring / Operational Intelligence |
-| **Domain Bucket** | Smart Automation / Disaster Management / Earth & Polar Sciences |
-| **Target End-Users** | NCPOR Command, Station Masters, Logistics Planners, Higher Authority |
-| **Core Innovation** | Ultra-Low Bandwidth Telemetry (~4KB JSON) + 3-Tier Rule-Based Operational Alerts + Multi-Stage RBAC Logistics + Dynamic Report Generation |
+| **Problem Statement ID** | **26060** |
+| **Problem Statement Title** | **Digital Platform for efficient remote management of Indian Antarctic Research Stations** |
+| **Description** | Develop a **Digital Twin framework for Maitri and Bharati stations** integrating **infrastructure, energy, logistics, and environmental monitoring** for efficient remote management. |
+| **Organization** | **Ministry of Earth Sciences (MoES)** |
+| **Department** | **National Centre for Polar and Ocean Research (NCPOR)** |
+| **Category** | **Software** |
+| **Theme** | **Smart Automation** |
 
 ### The Real-World Challenge
 
@@ -63,9 +64,10 @@ Managing India's extreme-environment research stations (Maitri and Bharati) in A
 5. **Hardware Isolation & Testing Latency:** Developers and planners lack physical access to classified remote sensor arrays, necessitating a high-fidelity software simulation environment to safely test disaster response protocols.
 6. **Reporting & Oversight Delays:** Higher authorities at NCPOR command require immediate, structured situational awareness, but compiling data across fragmented systems leads to dangerous intelligence delays.
 
+--- 
 ## 💡 The POLAR TWIN Solution
 
-**Polar Twin** is an end-to-end full-stack digital twin simulation engine designed to model, monitor, and autonomously triage interdependent telemetry and supply chain workflows, ensuring zero-latency oversight for the **National Centre for Polar and Ocean Research (NCPOR)**.
+**Polar Twin** is an end-to-end full-stack digital twin simulation engine designed to model, monitor, and autonomously triage interdependent telemetry and supply chain workflows, ensuring low-latency oversight for the **National Centre for Polar and Ocean Research (NCPOR)**.
 
 ```mermaid
 flowchart TD
@@ -76,7 +78,7 @@ flowchart TD
         B --> E[Infrastructure: HVAC & Structural]
     end
     
-    subgraph Triage [3-Tier Predictive Triage]
+    subgraph Triage [3-Tier Rule-Based Triage]
         C -->|Trigger| F[Automated Station Lockdown]
         D -->|Deficit| G[Automated Load Shedding]
         E -->|Failure| H[Critical Fire/Thermal Alert]
@@ -100,6 +102,9 @@ flowchart TD
     end
 ```
 
+> **Target End-Users**: NCPOR Command, Station Masters, Logistics Planners, Higher Authority  
+> **Core Innovation**: Ultra-Low Bandwidth Telemetry (~4KB JSON) + 3-Tier Rule-Based Operational Alerts + Multi-Stage RBAC Logistics + Dynamic Report Generation 
+
 ## ⚙️ Core System Capabilities
 
 ### 1. 📡 Ultra-Low Bandwidth Telemetry Engine
@@ -109,18 +114,18 @@ flowchart TD
 
 ### 2. 🚨 3-Tier Rule-Based Risk & Alert System
 
-- **Autonomous Triage:** Continuously parses telemetry streams to classify anomalies into a strict, globally visible 3-stage matrix (Nominal, Warning, Critical).
+- **Automated Triage:** Continuously parses telemetry streams to classify anomalies into a strict, globally visible 3-stage matrix (Nominal, Warning, Critical).
 - **Event-Driven Mitigation:** Detects rapid temperature drops and high winds to immediately trigger cross-system blizzard lockdowns and automatic load shedding before catastrophic failure occurs.
 
 ### 3. ⚡ Interdependent Grid & Infrastructure Health
 
-- **Live Net Power Mapping:** Continuously calculates total generation against station load, deploying autonomous battery depletion logic and estimated time-to-empty calculations.
+- **Live Net Power Mapping:** Continuously calculates total generation against station load, deploying automated battery depletion logic and estimated time-to-empty calculations.
 - **Structural Diagnostics:** Tracks HVAC efficiency, fire suppression readiness, and module-specific internal climates (e.g., Main Lab vs. Living Quarters).
 
 ### 4. 📦 State-Machine Logistics & Supply Workflow
 
 - **End-to-End Tracking:** Enforces a rigid lifecycle for all critical resources: *Requested → Authority Approved → Processing → In Transit → Delivered.*
-- **Telemetry Syncing:** Prevents resource depletion by intelligently syncing projected delivery ETAs with the live inventory burn-rate engine.
+- **Telemetry Syncing:** Prevents resource depletion by automatically syncing projected delivery ETAs with the live inventory burn-rate engine.
 
 ### 5. 🛡️ Access Control (RBAC)
 
@@ -358,7 +363,7 @@ npm run dev
 
 | Role | Operational Capabilities & Clearance Limitations |
 | :--- | :--- |
-| **Authority** | Ultimate oversight. Can approve high-priority logistics requisitions and view telemetry for both Maitri and Bharati` |
+| **Authority** | Ultimate oversight. Can approve high-priority logistics requisitions and view telemetry for both Maitri and Bharati. |
 | **Logistics** | Fleet and supply chain management. Can process approved orders and update transit statuses across both stations. |
 | **Station Master** | Locked to assigned station. Can submit requisitions, view local telemetry, and execute local reporting. Cannot view cross-station data. |
 
