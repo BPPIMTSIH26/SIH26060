@@ -7,8 +7,8 @@
   <!-- Hackathon Meta Badges -->
   <a href="https://sih.gov.in"><img src="https://img.shields.io/badge/Smart_India_Hackathon-2026-0284c7?style=flat-square" alt="SIH 2026" /></a>
   <a href="https://github.com/BPPIMTSIH26"><img src="https://img.shields.io/badge/Organization-BPPIMTSIH26-4f46e5?style=flat-square" alt="Organization" /></a>
-  <a href="https://github.com/BPPIMTSIH26"><img src="https://img.shields.io/badge/Team-ORION-339933?style=flat-square" alt="Organization" /></a>
-  <a href="https://github.com/BPPIMTSIH26/SIH26060"><img src="https://img.shields.io/badge/Problem_Statement_ID-26060-059669?style=flat-square" alt="Problem Statement" /></a>
+  <a href="https://github.com/BPPIMTSIH26"><img src="https://img.shields.io/badge/Team-ORION-F4C430?style=flat-square" alt="Organization" /></a>
+  <a href="https://github.com/BPPIMTSIH26/SIH26060"><img src="https://img.shields.io/badge/Problem_Statement_ID-SIH26060-059669?style=flat-square" alt="Problem Statement" /></a>
 
   <!-- Technology Stack Badges -->
   <a href="#"><img src="https://img.shields.io/badge/React-Frontend-blue?logo=react&logoColor=white" alt="React" /></a>
@@ -22,7 +22,7 @@
 
 **Polar Twin** is a comprehensive full-stack digital twin simulation engine designed to model interdependent telemetry and supply chain workflows for India's extreme-environment research stations in Antarctica: **Maitri** and **Bharati**.
 
-This system provides real-time monitoring, predictive alert logic, and role-based logistics management to ensure zero-latency operational oversight for the **National Centre for Polar and Ocean Research (NCPOR)**.
+This system provides real-time monitoring, Rule-Based Risk & Alert System, and role-based logistics management to ensure low-latency operational oversight for the **National Centre for Polar and Ocean Research (NCPOR)**.
 
 <div align="center">
 <!-- Quick Action Links -->
@@ -33,7 +33,8 @@ This system provides real-time monitoring, predictive alert logic, and role-base
 
 <div align="center">
 
-> **Smart India Hackathon (SIH 2026) | Problem Statement ID: 26060**  
+> **Smart India Hackathon (SIH 2026) | Problem Statement ID: SIH26060**  
+> **Team: ORION | Team ID: ------**  
 > **Institution:** B.P. Poddar Institute of Management & Technology (**BPPIMT**)  
 > **Lead Architect & Full-Stack Engineer:** **[Sayantan Pachal](https://github.com/sayantan-pachal)**
 </div>
@@ -44,12 +45,12 @@ This system provides real-time monitoring, predictive alert logic, and role-base
 
 | Attribute | Specification Details |
 | :--- | :--- |
-| **Problem Statement ID** | **26060** |
+| **Problem Statement ID** | **SIH26060** |
 | **Problem Statement Title** | **Digital Twin Simulation Engine for Interdependent Antarctic Station Operations** |
 | **Category** | Software / Remote Monitoring / Operational Intelligence |
 | **Domain Bucket** | Smart Automation / Disaster Management / Earth & Polar Sciences |
 | **Target End-Users** | NCPOR Command, Station Masters, Logistics Planners, Higher Authority |
-| **Core Innovation** | Ultra-Low Bandwidth Telemetry (~4KB JSON) + 3-Tier Predictive Alerts + Multi-Stage RBAC Logistics + Dynamic Report Generation |
+| **Core Innovation** | Ultra-Low Bandwidth Telemetry (~4KB JSON) + 3-Tier Rule-Based Operational Alerts + Multi-Stage RBAC Logistics + Dynamic Report Generation |
 
 ### The Real-World Challenge
 
@@ -104,9 +105,9 @@ flowchart TD
 ### 1. 📡 Ultra-Low Bandwidth Telemetry Engine
 
 - Operates independently via a custom Node.js backend generation engine, realistically simulating ambient temperature fluctuations, generator loads, and fuel burn rates.
-- **Extreme Data Optimization:** Compresses the entire interdependent state of the station (Energy, Environment, Infrastructure) into a microscopic **~4KB JSON payload**, ensuring zero-latency updates over severely constrained Antarctic networks.
+- **Extreme Data Optimization:** Compresses the entire interdependent state of the station (Energy, Environment, Infrastructure) into a microscopic **~4KB JSON payload**, ensuring low-latency updates over severely constrained Antarctic networks.
 
-### 2. 🚨 3-Tier Predictive Alert System
+### 2. 🚨 3-Tier Rule-Based Risk & Alert System
 
 - **Autonomous Triage:** Continuously parses telemetry streams to classify anomalies into a strict, globally visible 3-stage matrix (Nominal, Warning, Critical).
 - **Event-Driven Mitigation:** Detects rapid temperature drops and high winds to immediately trigger cross-system blizzard lockdowns and automatic load shedding before catastrophic failure occurs.
@@ -121,7 +122,7 @@ flowchart TD
 - **End-to-End Tracking:** Enforces a rigid lifecycle for all critical resources: *Requested → Authority Approved → Processing → In Transit → Delivered.*
 - **Telemetry Syncing:** Prevents resource depletion by intelligently syncing projected delivery ETAs with the live inventory burn-rate engine.
 
-### 5. 🛡️ Military-Grade Access Control (RBAC)
+### 5. 🛡️ Access Control (RBAC)
 
 - **Role-Based Geofencing:** Strictly segregated privileges restrict Station Masters to their assigned base, while granting Logistics and Authority roles cross-station oversight.
 - **Zero-Trust Security:** Secured via HTTP-only JWTs, robust session management, and SMTP-based OTP verification for high-clearance account creation and recovery.
@@ -132,6 +133,124 @@ flowchart TD
 - **Client-Side Export Processing:** Features an advanced `@react-pdf/renderer` engine to dynamically generate structured A4 PDFs and CSV tables for immediate off-station executive briefings without overloading the server.
 
 ## 🖥️ System Architecture & UI Tour
+
+```mermaid
+flowchart TD
+
+subgraph group_frontend["Command Interface"]
+  node_auth_ui["Authentication UI<br/>[Auth.jsx]"]
+  node_command_ui["Command Dashboard<br/>[Dashboard.jsx]"]
+  node_domain_views["Domain Views<br/>[EnergyPower.jsx]"]
+  node_logistics_ui["Logistics Workspace<br/>[Logistics.jsx]"]
+  node_reports_ui["Reports Workspace<br/>[Reports.jsx]"]
+end
+
+subgraph group_access["Access Services"]
+  node_server["API Server<br/>[server.js]"]
+  node_auth_routes["Auth Routes<br/>[authRoutes.js]"]
+  node_auth_controller["Auth Controller<br/>[authController.js]"]
+  node_auth_middleware["Auth Middleware<br/>[authMiddleware.js]"]
+end
+
+subgraph group_simulation["Twin Simulation"]
+  node_sim_engine["Simulation Engine<br/>[engine.js]"]
+  node_environment_engine["Environment Engine"]
+  node_energy_engine["Energy Engine<br/>[energyEngine.js]"]
+  node_infra_engine["Infrastructure Engine<br/>[infraEngine.js]"]
+  node_alert_engine["Alert Engine<br/>[alertEngine.js]"]
+end
+
+subgraph group_api["Operational APIs"]
+  node_telemetry_api["Telemetry API<br/>[fastLane.js]"]
+  node_logistics_api["Logistics API<br/>[slowLane.js]"]
+  node_order_controller["Order Controller<br/>[orderController.js]"]
+  node_logistics_controller["Logistics Controller"]
+  node_report_controller["Report Controller"]
+end
+
+subgraph group_data["Operational Data"]
+  node_user_model[("User Accounts<br/>[User.js]")]
+  node_otp_model[("OTP Records<br/>[Otp.js]")]
+  node_order_model[("Order Ledger<br/>[Order.js]")]
+  node_inventory_model[("Inventory State<br/>[Inventory.js]")]
+  node_snapshot_model[("Historical Snapshots")]
+end
+
+node_operator(("NCPOR Operator"))
+node_smtp["SMTP Email"]
+node_mongo[("MongoDB")]
+
+node_operator -->|"signs in"| node_auth_ui
+node_operator -->|"monitors stations"| node_command_ui
+node_auth_ui -->|"submits credentials"| node_auth_routes
+node_command_ui -->|"fetches telemetry"| node_telemetry_api
+node_domain_views -->|"reads domains"| node_telemetry_api
+node_logistics_ui -->|"manages supplies"| node_logistics_api
+node_logistics_ui -->|"submits requisitions"| node_order_controller
+node_reports_ui -->|"requests reports"| node_report_controller
+node_server -->|"mounts routes"| node_auth_routes
+node_server -->|"mounts routes"| node_telemetry_api
+node_server -->|"mounts routes"| node_logistics_api
+node_server -->|"mounts reports"| node_report_controller
+node_auth_routes -->|"dispatches auth"| node_auth_controller
+node_auth_routes -->|"protects updates"| node_auth_middleware
+node_auth_controller -->|"reads users"| node_user_model
+node_auth_controller -->|"verifies OTPs"| node_otp_model
+node_auth_controller -.->|"sends OTPs"| node_smtp
+node_user_model -->|"persists accounts"| node_mongo
+node_otp_model -->|"persists codes"| node_mongo
+node_telemetry_api -->|"serves state"| node_sim_engine
+node_sim_engine -->|"ticks weather"| node_environment_engine
+node_sim_engine -->|"ticks energy"| node_energy_engine
+node_sim_engine -->|"ticks infrastructure"| node_infra_engine
+node_sim_engine -->|"evaluates alerts"| node_alert_engine
+node_sim_engine -->|"syncs inventory"| node_inventory_model
+node_order_controller -->|"stores orders"| node_order_model
+node_order_controller -->|"injects deliveries"| node_sim_engine
+node_order_model -->|"persists ledger"| node_mongo
+node_inventory_model -->|"persists stock"| node_mongo
+node_report_controller -->|"reads live state"| node_sim_engine
+node_report_controller -->|"reads history"| node_snapshot_model
+node_snapshot_model -->|"reads snapshots"| node_mongo
+
+click node_auth_ui "https://github.com/bppimtsih26/sih26060/blob/main/frontend/src/components/Auth/Auth.jsx"
+click node_command_ui "https://github.com/bppimtsih26/sih26060/blob/main/frontend/src/pages/Dashboard/Dashboard.jsx"
+click node_domain_views "https://github.com/bppimtsih26/sih26060/blob/main/frontend/src/pages/EnergyPower/EnergyPower.jsx"
+click node_logistics_ui "https://github.com/bppimtsih26/sih26060/blob/main/frontend/src/pages/Logistics/Logistics.jsx"
+click node_reports_ui "https://github.com/bppimtsih26/sih26060/blob/main/frontend/src/pages/Reports/Reports.jsx"
+click node_server "https://github.com/bppimtsih26/sih26060/blob/main/Backend/server.js"
+click node_auth_routes "https://github.com/bppimtsih26/sih26060/blob/main/Backend/routes/authRoutes.js"
+click node_auth_controller "https://github.com/bppimtsih26/sih26060/blob/main/Backend/controllers/authController.js"
+click node_auth_middleware "https://github.com/bppimtsih26/sih26060/blob/main/Backend/middleware/authMiddleware.js"
+click node_sim_engine "https://github.com/bppimtsih26/sih26060/blob/main/Backend/simulation/engine.js"
+click node_environment_engine "https://github.com/bppimtsih26/sih26060/blob/main/Backend/simulation/engines/environmentEngine.js"
+click node_energy_engine "https://github.com/bppimtsih26/sih26060/blob/main/Backend/simulation/engines/energyEngine.js"
+click node_infra_engine "https://github.com/bppimtsih26/sih26060/blob/main/Backend/simulation/engines/infraEngine.js"
+click node_alert_engine "https://github.com/bppimtsih26/sih26060/blob/main/Backend/simulation/engines/alertEngine.js"
+click node_telemetry_api "https://github.com/bppimtsih26/sih26060/blob/main/Backend/routes/fastLane.js"
+click node_logistics_api "https://github.com/bppimtsih26/sih26060/blob/main/Backend/routes/slowLane.js"
+click node_order_controller "https://github.com/bppimtsih26/sih26060/blob/main/Backend/controllers/orderController.js"
+click node_logistics_controller "https://github.com/bppimtsih26/sih26060/blob/main/Backend/controllers/logisticsController.js"
+click node_report_controller "https://github.com/bppimtsih26/sih26060/blob/main/Backend/controllers/reportController.js"
+click node_user_model "https://github.com/bppimtsih26/sih26060/blob/main/Backend/models/User.js"
+click node_otp_model "https://github.com/bppimtsih26/sih26060/blob/main/Backend/models/Otp.js"
+click node_order_model "https://github.com/bppimtsih26/sih26060/blob/main/Backend/models/Order.js"
+click node_inventory_model "https://github.com/bppimtsih26/sih26060/blob/main/Backend/models/Inventory.js"
+click node_snapshot_model "https://github.com/bppimtsih26/sih26060/blob/main/Backend/models/HistoricalSnapshot.js"
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_auth_ui,node_command_ui,node_domain_views,node_logistics_ui,node_reports_ui toneBlue
+class node_server,node_auth_routes,node_auth_controller,node_auth_middleware,node_mongo toneAmber
+class node_sim_engine,node_environment_engine,node_energy_engine,node_infra_engine,node_alert_engine toneMint
+class node_telemetry_api,node_logistics_api,node_order_controller,node_logistics_controller,node_report_controller toneRose
+class node_user_model,node_otp_model,node_order_model,node_inventory_model,node_snapshot_model,node_operator,node_smtp toneIndigo
+```
 
 <div align="center">
 
@@ -282,7 +401,7 @@ The Polar Twin backend is strictly segregated into rapid telemetry streams ("Fas
 
 - **Team Name**: **ORION**
 - **Organization**: **BPPIMTSIH26** (B.P. Poddar Institute of Management and Technology)
-- **Smart India Hackathon 2026**: Problem Statement **26060**
+- **Smart India Hackathon 2026**: Problem Statement **SIH26060**
 - **Project Title**: NCPOR Polar Twin Command
 
 ### Team Structure & Contributions
