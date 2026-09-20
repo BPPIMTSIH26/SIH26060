@@ -8,7 +8,7 @@ export function TrendCharts({ powerSeries = [], tempSeries = [], fuelSeries = []
       <div className="rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-950/60 transition-colors duration-300">
         <div className="mb-4 flex items-baseline justify-between">
           <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">Power Matrix</h3>
-          <span className="font-mono text-[0.65rem] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Gen vs Load · 24h</span>
+          <span className="font-mono text-[0.65rem] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Gen vs Load · Live Polling</span>
         </div>
         <div className="h-44 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -34,7 +34,7 @@ export function TrendCharts({ powerSeries = [], tempSeries = [], fuelSeries = []
       <div className="rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-950/60 transition-colors duration-300">
         <div className="mb-4 flex items-baseline justify-between">
           <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">Thermal Zones</h3>
-          <span className="font-mono text-[0.65rem] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">3 Modules · 7d</span>
+          <span className="font-mono text-[0.65rem] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">3 Modules · Live Tracking</span>
         </div>
         <div className="h-44 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -56,7 +56,7 @@ export function TrendCharts({ powerSeries = [], tempSeries = [], fuelSeries = []
       <div className="rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-slate-800/80 dark:bg-slate-950/60 transition-colors duration-300">
         <div className="mb-4 flex items-baseline justify-between">
           <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">Fuel Reserves</h3>
-          <span className="font-mono text-[0.65rem] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Pri vs Res · 72h</span>
+          <span className="font-mono text-[0.65rem] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Pri vs Res · Real-Time</span>
         </div>
         <div className="h-44 w-full">
           <ResponsiveContainer width="100%" height="100%">
