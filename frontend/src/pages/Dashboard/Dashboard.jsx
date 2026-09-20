@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Activity, ShieldCheck, Zap, Thermometer, Box, Droplet, Wind, Battery } from "lucide-react";
@@ -10,21 +10,65 @@ import { PillarCards } from "./components/PillarCards";
 import { TrendCharts } from "./components/TrendCharts";
 import Skeleton from "../../components/context/Skeleton";
 
+// Seed history generator for initial chart data
+const generateSeedHistory = (station) => {
+  const isMaitri = station === "Maitri";
+  const baseGen = isMaitri ? 255.0 : 220.0; 
+  const baseLoad = isMaitri ? 245.5 : 160.0;
+  const baseQTemp = 19.5;
+  const baseLTemp = 19.0;
+  const baseSTemp = -5.0;
+  const baseFuel = isMaitri ? 76.5 : 83.3;
+
+  return Array.from({ length: 7 }).map((_, i) => {
+    const pastTime = new Date(Date.now() - (6 - i) * 30000);
+    return {
+      timestamp: pastTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      energy: {
+        power_distribution: {
+          total_generation_kw: baseGen + (Math.random() - 0.5) * 5,
+          total_load_kw: baseLoad + (Math.random() - 0.5) * 10
+        }
+      },
+      infra: {
+        modules: {
+          living_quarters: { thermal_management: { indoor_temperature_c: baseQTemp + (Math.random() - 0.5) * 0.5 } },
+          main_lab: { thermal_management: { indoor_temperature_c: baseLTemp + (Math.random() - 0.5) * 0.5 } },
+          storage_module: { thermal_management: { indoor_temperature_c: baseSTemp + (Math.random() - 0.5) * 0.2 } }
+        }
+      },
+      logistics: {
+        fuel_reserves: {
+          primary_tank: { current_level_percent: baseFuel + ((6 - i) * 0.05) },
+          reserve_status_percent: 100
+        }
+      }
+    };
+  });
+};
+
 export default function Dashboard() {
   const { activeStation = "Maitri" } = useOutletContext() || {};
   const [dashboardData, setDashboardData] = useState(null);
+
+  // Initialize history with seed data for the active station
+  const [history, setHistory] = useState(() => generateSeedHistory(activeStation));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Data fetching & background polling
+  // Fetch telemetry and logistics data on mount and every 30 seconds
   useEffect(() => {
     const abortController = new AbortController();
     const signal = abortController.signal;
 
+    // Reset history and dashboard data when station changes
+    setHistory(generateSeedHistory(activeStation));
+    setDashboardData(null);
+
     const fetchAllData = async (isBackgroundRefresh = false) => {
       if (!isBackgroundRefresh) setLoading(true);
       setError(null);
-      
+
       try {
         const results = await Promise.allSettled([
           telemetryAPI.getLiveTelemetry(activeStation, { signal }),
@@ -38,12 +82,24 @@ export default function Dashboard() {
 
         if (!telemetryRes && !logRes) throw new Error("Critical Failure: All station systems are offline.");
 
-        setDashboardData({
+        const currentTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const currentSnapshot = {
           infra: telemetryRes?.infrastructure,
           energy: telemetryRes?.energy,
           env: telemetryRes?.environment,
-          logistics: logRes
+          logistics: logRes,
+          timestamp: currentTimestamp
+        };
+
+        setDashboardData(currentSnapshot);
+
+        // Append to true rolling history (cap at 7 points for a clean sliding window chart)
+        setHistory(prev => {
+          const updated = [...prev, currentSnapshot];
+          return updated.length > 7 ? updated.slice(updated.length - 7) : updated;
         });
+
       } catch (err) {
         if (!signal.aborted && !isBackgroundRefresh) setError(err.message || "Failed to synchronize station telemetry.");
       } finally {
@@ -52,7 +108,8 @@ export default function Dashboard() {
     };
 
     fetchAllData(false);
-    const intervalId = setInterval(() => fetchAllData(true), 30000);
+    const intervalId = setInterval(() => fetchAllData(true), 30000); // 30s live polling
+    
     return () => { 
       clearInterval(intervalId);
       abortController.abort(); 
@@ -113,7 +170,7 @@ export default function Dashboard() {
     const cEnergy = clamp(energyScore);
     const cEnv = clamp(envScore);
     const cLog = clamp(logScore);
-    
+
     const finalScore = Math.round((cInfra + cEnergy + cEnv + cLog) / 4);
 
     let trend = "stable";
@@ -131,10 +188,10 @@ export default function Dashboard() {
   };
 
   const dynamicHealth = calculateStationHealth();
-  
+
   const allAlerts = [
     ...(infra?.alerts_local || []),
-    ...(energy?.interconnections?.critical_alert ? [{ severity: energy.interconnections.severity.toLowerCase(), message: energy.interconnections.alert_description }] : []),
+    ...(energy?.interconnections?.critical_alert && energy.interconnections.critical_alert !== "NONE" ? [{ severity: energy.interconnections.severity.toLowerCase(), message: energy.interconnections.alert_description }] : []),
     ...(env?.alerts_local || []),
     ...(logistics?.alerts_local || [])
   ];
@@ -189,29 +246,30 @@ export default function Dashboard() {
     }
   ];
 
-  const powerSeries = Array.from({ length: 7 }).map((_, i) => ({
-    t: `-${(6 - i) * 4}h`,
-    generation: energy?.power_distribution?.total_generation_kw || 200,
-    load: energy?.power_distribution?.total_load_kw || 180
+  // Map the genuine rolling history state directly to the charts
+  const powerSeries = history.map(snap => ({
+    t: snap.timestamp,
+    generation: Number((snap.energy?.power_distribution?.total_generation_kw || 0).toFixed(1)),
+    load: Number((snap.energy?.power_distribution?.total_load_kw || 0).toFixed(1))
   }));
 
-  const tempSeries = Array.from({ length: 7 }).map((_, i) => ({
-    day: `Day ${i+1}`,
-    quarters: infra?.modules?.living_quarters?.thermal_management?.indoor_temperature_c || 20,
-    lab: infra?.modules?.main_lab?.thermal_management?.indoor_temperature_c || 19,
-    storage: infra?.modules?.storage_module?.thermal_management?.indoor_temperature_c || -5
+  const tempSeries = history.map(snap => ({
+    day: snap.timestamp, 
+    quarters: Number((snap.infra?.modules?.living_quarters?.thermal_management?.indoor_temperature_c || 0).toFixed(1)),
+    lab: Number((snap.infra?.modules?.main_lab?.thermal_management?.indoor_temperature_c || 0).toFixed(1)),
+    storage: Number((snap.infra?.modules?.storage_module?.thermal_management?.indoor_temperature_c || 0).toFixed(1))
   }));
 
-  const fuelSeries = Array.from({ length: 7 }).map((_, i) => ({
-    t: `-${(6 - i) * 12}h`,
-    primary: logistics?.fuel_reserves?.reserve_status_percent || 80,
-    reserve: 100
+  const fuelSeries = history.map(snap => ({
+    t: snap.timestamp,
+    primary: Number((snap.logistics?.fuel_reserves?.primary_tank?.current_level_percent || 0).toFixed(1)),
+    reserve: Number((snap.logistics?.fuel_reserves?.reserve_status_percent || 0).toFixed(1))
   }));
 
   return (
     <div className="min-h-screen bg-amber-50 dark:bg-slate-950 text-slate-50 font-sans">
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6">
-        
+
         <div className="scroll-box">
           <StationOverview 
             activeStation={activeStation} 
@@ -225,11 +283,11 @@ export default function Dashboard() {
             }}
           />
         </div>
-        
+
         <div className="scroll-box">
           <PillarCards pillars={pillars} />
         </div>
-        
+
         <div className="scroll-box">
           <TrendCharts 
             powerSeries={powerSeries} 
@@ -237,7 +295,7 @@ export default function Dashboard() {
             fuelSeries={fuelSeries} 
           />
         </div>
-        
+
       </div>
     </div>
   );
