@@ -20,9 +20,9 @@
 
 </div>
 
-**Polar Twin** is a comprehensive full-stack digital twin simulation engine designed to model interdependent telemetry and supply chain workflows for India's extreme-environment research stations in Antarctica: **Maitri** and **Bharati**.
+**Polar Twin** is a comprehensive full-stack digital twin simulation engine featuring **interactive 3D WebGL environments**, designed to model interdependent telemetry and supply chain workflows for India's extreme-environment research stations in Antarctica: **Maitri** and **Bharati**.
 
-This system provides real-time monitoring, Rule-Based Risk & Alert System, and role-based logistics management to ensure low-latency operational oversight for the **National Centre for Polar and Ocean Research (NCPOR)**.
+This system provides real-time monitoring, a Rule-Based Risk & Alert System, and role-based logistics management to ensure low-latency operational oversight for the **National Centre for Polar and Ocean Research (NCPOR)**.
 
 <div align="center">
 <!-- Quick Action Links -->
@@ -72,38 +72,87 @@ Managing India's extreme-environment research stations (Maitri and Bharati) in A
 ```mermaid
 flowchart TD
     subgraph Simulation [Autonomous Telemetry Engine]
-        A[Node.js Backend Simulation] --> B[Fast-Lane API / ~4KB Payload]
-        B --> C[Environment: Blizzard & Temp]
-        B --> D[Energy: Grid Load & Battery]
-        B --> E[Infrastructure: HVAC & Structural]
+        A["⚙️ Node.js Backend Simulation"] --> B["⚡ Fast-Lane API / ~4KB Payload"]
+        B --> C["🌡️ Environment: Blizzard & Temp"]
+        B --> D["🔋 Energy: Grid Load & Battery"]
+        B --> E["🏗️ Infrastructure: HVAC & Structural"]
     end
     
     subgraph Triage [3-Tier Rule-Based Triage]
-        C -->|Trigger| F[Automated Station Lockdown]
-        D -->|Deficit| G[Automated Load Shedding]
-        E -->|Failure| H[Critical Fire/Thermal Alert]
+        C -->|Trigger| F["🔒 Automated Station Lockdown"]
+        D -->|Deficit| G["📉 Automated Load Shedding"]
+        E -->|Failure| H["🔥 Critical Fire/Thermal Alert"]
         
-        F --> I[Alert Propagation Engine]
+        F --> I["🚨 Alert Propagation Engine"]
         G --> I
         H --> I
     end
 
     subgraph Workflow [RBAC Supply Chain]
-        K[Station Master Requisition] --> S[Slow-Lane API / Transactional Ledger]
-        S --> L[Authority Approval]
-        L --> M[Logistics Processing & Transit]
-        M --> N[Station Delivery & Comprehensive Inventory Sync]
+        K["📝 Station Master Requisition"] --> S["📦 Slow-Lane API / Transactional Ledger"]
+        S --> L["✅ Authority Approval"]
+        L --> M["🚚 Logistics Processing & Transit"]
+        M --> N["🔄 Station Delivery & Inventory Sync"]
     end
 
     subgraph Command [Tactical Interface]
-        I --> J[React UI Comprehensive Dashboard]
+        I --> J["💻 React UI Comprehensive Dashboard"]
         N --> J
-        J --> O[Dynamic A4 PDF/CSV Executive Reports]
+        J --> O["📊 Dynamic A4 PDF/CSV Reports"]
     end
+
+    %% Class Definitions for Colors
+    classDef sim fill:#0f766e,stroke:#5eead4,color:#fff,stroke-width:2px
+    classDef triage fill:#9f1239,stroke:#fda4af,color:#fff,stroke-width:2px
+    classDef work fill:#5b21b6,stroke:#d8b4fe,color:#fff,stroke-width:2px
+    classDef cmd fill:#1d4ed8,stroke:#93c5fd,color:#fff,stroke-width:2px
+
+    %% Assigning Classes to Nodes
+    class A,B,C,D,E sim
+    class F,G,H,I triage
+    class K,S,L,M,N work
+    class J,O cmd
 ```
 
 > **Target End-Users**: NCPOR Command, Station Masters, Logistics Planners, Higher Authority  
 > **Core Innovation**: Ultra-Low Bandwidth Telemetry (~4KB JSON) + 3-Tier Rule-Based Operational Alerts + Multi-Stage RBAC Logistics + Dynamic Report Generation 
+
+## 🧠 Why Polar Twin Is a Digital Twin
+
+Polar Twin combines three interconnected layers:
+
+1. **Physical Representation**
+   - Interactive 3D models of Maitri and Bharati.
+   - Procedurally generated station environments and terrain.
+
+2. **Operational State**
+   - Simulated telemetry for energy, environment, infrastructure, inventory, and station modules.
+   - Historical snapshots and current operational state.
+
+3. **Decision & Response Layer**
+   - Rule-based anomaly detection.
+   - Automated lockdown and load-shedding responses.
+   - RBAC logistics workflows.
+   - Reporting and operational oversight.
+
+This creates a closed software representation of the station where the visual twin, simulated operational state, and response workflows operate as interconnected components rather than independent dashboard features.
+
+## 🖥️ Visual Preview
+
+### Interactive 3D Station Twin
+
+The command dashboard provides an interactive WebGL digital twin of the Maitri and Bharati research stations.
+
+<p align="center">
+  <img src="./archive/Maitri 3D Digital Twin.png" alt="Maitri 3D Digital Twin" width="48%">
+  <img src="./archive/Bharati 3D Digital Twin.png" alt="Bharati 3D Digital Twin" width="48%">
+</p>
+
+### Operational Command Dashboard
+
+<p align="center">
+  <img src="./archive/Polar Twin Command Dashboard.png" alt="Polar Twin Command Dashboard" width="90%">
+</p>
 
 ## ⚙️ Core System Capabilities
 
@@ -136,6 +185,34 @@ flowchart TD
 
 - **On-Demand Intelligence:** Compiles targeted historical data (Energy, Environment, Logistics, or Overall) on the fly based on the user's domain scope and time window.
 - **Client-Side Export Processing:** Features an advanced `@react-pdf/renderer` engine to dynamically generate structured A4 PDFs and CSV tables for immediate off-station executive briefings without overloading the server.
+
+### 7. 🧊 Interactive 3D Antarctic Digital Twin
+
+- **Photorealistic Station Representation:** Renders dedicated 3D digital-twin models of the Maitri and Bharati research stations using GLB assets.
+- **Interactive WebGL Visualization:** Built with React Three Fiber, Three.js, and Drei, allowing operators to orbit, inspect, and navigate the station environment directly inside the command dashboard.
+- **Station-Specific Twin Environments:** Maitri and Bharati use dedicated procedural environments representing their surrounding terrain, infrastructure context, and operational surroundings.
+- **Telemetry-Aware Visualization:** Live station telemetry is surfaced alongside the 3D twin, connecting physical station modules with their corresponding operational status.
+- **Fullscreen Twin Mode:** Operators can expand the 3D station view into a dedicated fullscreen topology/inspection interface.
+- **Dynamic Day/Night Environment:** The visualization automatically adapts the Antarctic scene according to the calculated station day/night cycle.
+
+### 8. 🏔️ Procedural Antarctic Environment Engine
+
+- **Procedural Terrain:** Generates station surroundings algorithmically using layered mathematical terrain functions rather than relying solely on static background imagery.
+- **Station-Specific Landscapes:** Maitri and Bharati use separate environment-generation pipelines reflecting their different terrain characteristics.
+- **Environmental Assets:** Procedurally distributes rocks, storage containers, terrain features, and other contextual objects around the station.
+- **Terrain Shading:** Uses vertex-level terrain coloring to differentiate snow, rock, ice, and exposed terrain.
+- **Dynamic Lighting:** Integrates day/night environment lighting and star fields for immersive polar visualization.
+- **GPU-Aware Rendering:** Reuses geometries and materials where possible and explicitly disposes WebGL resources during component unmounts to reduce GPU memory leakage.
+
+### 9. 🔗 Telemetry-Linked Digital Twin
+
+The 3D visualization is not a standalone animation layer. It is connected to the same operational telemetry and station-state pipeline used by the command dashboard.
+
+- Live environment telemetry drives contextual indicators such as temperature and wind conditions.
+- Station modules expose operational states such as Online, Warning, Critical, Maintenance, and Offline.
+- Station-specific telemetry is presented alongside the corresponding 3D twin.
+- Maitri and Bharati can be switched without changing the underlying monitoring architecture.
+- The visualization therefore acts as a spatial operational interface over the simulated station state rather than a purely decorative 3D scene.
 
 ## 🖥️ System Architecture & UI Tour
 
@@ -243,18 +320,19 @@ click node_order_model "https://github.com/bppimtsih26/sih26060/blob/main/Backen
 click node_inventory_model "https://github.com/bppimtsih26/sih26060/blob/main/Backend/models/Inventory.js"
 click node_snapshot_model "https://github.com/bppimtsih26/sih26060/blob/main/Backend/models/HistoricalSnapshot.js"
 
-classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
-classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
-classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
-classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
-classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
-classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
-classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
-class node_auth_ui,node_command_ui,node_domain_views,node_logistics_ui,node_reports_ui toneBlue
-class node_server,node_auth_routes,node_auth_controller,node_auth_middleware,node_mongo toneAmber
-class node_sim_engine,node_environment_engine,node_energy_engine,node_infra_engine,node_alert_engine toneMint
-class node_telemetry_api,node_logistics_api,node_order_controller,node_logistics_controller,node_report_controller toneRose
-class node_user_model,node_otp_model,node_order_model,node_inventory_model,node_snapshot_model,node_operator,node_smtp toneIndigo
+classDef frontend fill:#1e3a8a,stroke:#60a5fa,color:#fff,stroke-width:2px
+classDef access fill:#78350f,stroke:#fbbf24,color:#fff,stroke-width:2px
+classDef sim fill:#14532d,stroke:#4ade80,color:#fff,stroke-width:2px
+classDef api fill:#4c1d95,stroke:#c084fc,color:#fff,stroke-width:2px
+classDef data fill:#0f172a,stroke:#38bdf8,color:#fff,stroke-width:2px
+classDef external fill:#881337,stroke:#f43f5e,color:#fff,stroke-width:2px
+
+class node_auth_ui,node_command_ui,node_domain_views,node_logistics_ui,node_reports_ui frontend
+class node_server,node_auth_routes,node_auth_controller,node_auth_middleware access
+class node_sim_engine,node_environment_engine,node_energy_engine,node_infra_engine,node_alert_engine sim
+class node_telemetry_api,node_logistics_api,node_order_controller,node_logistics_controller,node_report_controller api
+class node_user_model,node_otp_model,node_order_model,node_inventory_model,node_snapshot_model data
+class node_operator,node_smtp,node_mongo external
 ```
 
 <div align="center">
@@ -262,6 +340,7 @@ class node_user_model,node_otp_model,node_order_model,node_inventory_model,node_
 | Module | Route / Component | Description |
 | :--- | :--- | :--- |
 | **Tactical Dashboard** | `/dashboard` (`Dashboard.jsx`) | Real-time health scores, active blizzards, grid deficits, and priority alerts. |
+| **3D Station Twin** | `/dashboard` (`StationMap.jsx`) | Interactive WebGL digital twin of Maitri and Bharati with GLB station models, procedural terrain, telemetry overlays, day/night visualization, and fullscreen inspection. |
 | **Requisitions Command** | `/requisitions` (`Requisitions.jsx`) | RBAC supply chain queues, multi-stage approval pipelines, and direct inventory tracking. |
 | **Data Export Engine** | `/reports` (`Reports.jsx`) | Configurable reporting matrix generating `@react-pdf/renderer` A4 dossiers and CSV tables. |
 | **Energy Matrix** | `/energy` (`Energy.jsx`) | Deep-dive telemetry for diesel generators, active loads, and battery arrays. |
@@ -270,6 +349,76 @@ class node_user_model,node_otp_model,node_order_model,node_inventory_model,node_
 | **System Auth** | `/auth` (`Auth.jsx`) | Secured gateway featuring SMTP OTP dispatch and strict JWT session validation. |
 
 </div>
+
+```mermaid
+flowchart TD
+    A["🧊 3D Digital Twin Architecture"]
+
+    A --> B["Station Selection"]
+    B --> C["Maitri Twin"]
+    B --> D["Bharati Twin"]
+
+    C --> E["Station GLB Model"]
+    D --> F["Station GLB Model"]
+
+    E --> G["React Three Fiber"]
+    F --> G
+
+    G --> H["Three.js + Drei"]
+
+    H --> I["Station-Specific Environment"]
+
+    I --> J["🏔️ Procedural Terrain"]
+    I --> K["🪨 Environmental Assets"]
+    I --> L["❄️ Snow / Ice / Rock Shading"]
+    I --> M["🌌 Dynamic Lighting & Star Field"]
+
+    H --> N["🎥 Interactive Camera"]
+    N --> O["Orbit / Inspection"]
+    N --> P["Fullscreen Twin Mode"]
+
+    Q["📡 Live Telemetry"] --> R["Station State"]
+    R --> S["Environment Status"]
+    R --> T["Module Status"]
+    R --> U["Operational Indicators"]
+
+    S --> I
+    T --> H
+    U --> H
+
+    V["☀️ Day / Night Cycle"] --> M
+
+    W["⚡ WebGL Performance Layer"] --> X["Shared Geometries & Materials"]
+    W --> Y["Memoized Terrain"]
+    W --> Z["Resource Disposal"]
+
+    G --> W
+
+    classDef root fill:#0f172a,stroke:#38bdf8,color:#fff,stroke-width:2px
+    classDef station fill:#1e3a8a,stroke:#60a5fa,color:#fff
+    classDef render fill:#312e81,stroke:#818cf8,color:#fff
+    classDef environment fill:#14532d,stroke:#4ade80,color:#fff
+    classDef telemetry fill:#78350f,stroke:#fbbf24,color:#fff
+    classDef performance fill:#4c1d95,stroke:#c084fc,color:#fff
+
+    class A root
+    class B,C,D station
+    class E,F,G,H,N,O,P render
+    class I,J,K,L,M,V environment
+    class Q,R,S,T,U telemetry
+    class W,X,Y,Z performance
+```
+
+### ⚡ 3D Rendering & Performance
+
+The 3D layer is designed with browser/WebGL performance in mind:
+
+- GLB assets are preloaded using `useGLTF.preload()`.
+- Procedural terrain uses typed vertex-color buffers.
+- Shared geometries and materials reduce unnecessary GPU allocations.
+- Expensive terrain calculations are memoized.
+- WebGL geometries and materials are explicitly disposed when components unmount.
+- Camera distance and polar-angle limits prevent uncontrolled scene navigation.
 
 ## 🛠️ Technology Stack
 
@@ -288,6 +437,9 @@ SIH26060/
 │   └── server.js            # Main application entry point
 ├── frontend/                # React + Vite + Tailwind CSS v3
 │   ├── public/              # Static public assets
+│   │   ├── models/
+│   │   │   ├── maitri.glb   # Maitri station 3D digital-twin model
+│   │   │   └── bharati.glb  # Bharati station 3D digital-twin model
 │   ├── src/                 # React source code
 │   │   ├── assets/          # Images, SVGs, and global styles
 │   │   ├── components/      # Frost-glass UI cards, Custom Dropdowns, Navbars
@@ -306,7 +458,8 @@ SIH26060/
 
 ### 💻 Core Technologies
 
-- **Frontend**: React.js, Vite, Tailwind CSS v3, Lucide Icons, `@react-pdf/renderer` (for on-the-fly programmatic document generation).
+- **Frontend:** React.js, Vite, Tailwind CSS, React Router, Lucide Icons, Recharts, `@react-pdf/renderer`(for on-the-fly programmatic document generation).
+- **3D Digital Twin:** Three.js, React Three Fiber, React Three Drei, GLB/GLTF assets, WebGL.
 - **Backend & Security**: Node.js, Express.js, JWT (HTTP-Only session management), bcrypt (cryptographic password hashing), Google Apps Script (SMTP OTP dispatch).
 - **Database & State**: MongoDB Atlas, Mongoose ODM, React Context API.
 - **Architecture**: Event-Driven Simulation Engine, strict REST API segregation (Fast-Lane vs. Slow-Lane).
@@ -424,6 +577,19 @@ The Polar Twin backend is strictly segregated into rapid telemetry streams ("Fas
 - 📊 **Ahana** ([@I-Lawrence](https://github.com/I-Lawrence)) - **Telemetry Processing & Automated Reporting Specialist**
 
 <br>
+
+---
+
+## 📄 License
+
+**© 2026 ORION - B. P. Poddar Institute of Management & Technology. All Rights Reserved.**
+
+This project and its source code are provided exclusively for the purposes of the **Smart India Hackathon 2026** evaluation and demonstration. 
+
+**Proprietary Notice**
+Unauthorized copying, modification, distribution, or commercial use of this repository's contents-including source code, 3D digital assets, and documentation-is strictly prohibited without prior written consent from the project authors. 
+
+*Note: All third-party libraries, frameworks, open-source dependencies, and externally sourced 3D models used within this project remain subject to their respective original licenses.*
 
 ---
 
