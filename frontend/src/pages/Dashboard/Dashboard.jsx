@@ -13,7 +13,7 @@ import Skeleton from "../../components/context/Skeleton";
 // Seed history generator for initial chart data
 const generateSeedHistory = (station) => {
   const isMaitri = station === "Maitri";
-  const baseGen = isMaitri ? 255.0 : 220.0; 
+  const baseGen = isMaitri ? 255.0 : 220.0;
   const baseLoad = isMaitri ? 245.5 : 160.0;
   const baseQTemp = 19.5;
   const baseLTemp = 19.0;
@@ -109,10 +109,10 @@ export default function Dashboard() {
 
     fetchAllData(false);
     const intervalId = setInterval(() => fetchAllData(true), 30000); // 30s live polling
-    
-    return () => { 
+
+    return () => {
       clearInterval(intervalId);
-      abortController.abort(); 
+      abortController.abort();
     };
   }, [activeStation]);
 
@@ -254,7 +254,7 @@ export default function Dashboard() {
   }));
 
   const tempSeries = history.map(snap => ({
-    day: snap.timestamp, 
+    day: snap.timestamp,
     quarters: Number((snap.infra?.modules?.living_quarters?.thermal_management?.indoor_temperature_c || 0).toFixed(1)),
     lab: Number((snap.infra?.modules?.main_lab?.thermal_management?.indoor_temperature_c || 0).toFixed(1)),
     storage: Number((snap.infra?.modules?.storage_module?.thermal_management?.indoor_temperature_c || 0).toFixed(1))
@@ -271,9 +271,13 @@ export default function Dashboard() {
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:gap-6">
 
         <div className="scroll-box">
-          <StationOverview 
-            activeStation={activeStation} 
-            modules={Object.values(infra?.modules || {})}
+          <StationOverview
+            activeStation={activeStation}
+            // FIX: Map entries to keep the key as an 'id' or 'name' so the 3D model knows what is what
+            modules={Object.entries(infra?.modules || {}).map(([key, value]) => ({
+              id: key,
+              ...value
+            }))}
             health={dynamicHealth}
             alerts={allAlerts}
             environment={{
@@ -282,6 +286,7 @@ export default function Dashboard() {
               outsideTemp: env?.exterior_conditions?.temperature?.outside_temperature_c
             }}
           />
+
         </div>
 
         <div className="scroll-box">
@@ -289,10 +294,10 @@ export default function Dashboard() {
         </div>
 
         <div className="scroll-box">
-          <TrendCharts 
-            powerSeries={powerSeries} 
-            tempSeries={tempSeries} 
-            fuelSeries={fuelSeries} 
+          <TrendCharts
+            powerSeries={powerSeries}
+            tempSeries={tempSeries}
+            fuelSeries={fuelSeries}
           />
         </div>
 
