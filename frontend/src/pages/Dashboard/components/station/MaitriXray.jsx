@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { Html } from "@react-three/drei";
@@ -6,20 +7,20 @@ import { useFrame } from "@react-three/fiber";
 const COLORS = ["#60a5fa", "#4ade80", "#facc15", "#fb923c", "#2dd4bf"];
 const RANDOM_SEQ = [3, 1, 4, 0, 2, 4, 1, 0, 3, 2, 1, 4, 2, 0, 3, 1, 4, 2];
 
-const getRoomTemp = (blockName, colorIndex, moduleTemps, outsideTemp) => {
-    const lqRef = moduleTemps?.lq ?? 19.5;
-    if (blockName.includes("Main Lab")) return `${(moduleTemps?.lab ?? 19.0).toFixed(1)}°C`;
-    if (blockName.includes("Storage") || blockName.includes("Logistics")) return `${(moduleTemps?.storage ?? -5.0).toFixed(1)}°C`;
-    if (blockName.includes("Living Quarters")) return `${(lqRef + (colorIndex % 3) * 0.1).toFixed(1)}°C`;
-    if (blockName.includes("Hospital") || blockName.includes("Office") || blockName.includes("Canteen") || blockName.includes("Auditorium")) {
-        return `${(lqRef - 0.2 + (colorIndex % 2) * 0.2).toFixed(1)}°C`;
+const getRoomTemp = (blockName, moduleTemps) => {
+    if (blockName.includes("Main Lab")) {
+        return moduleTemps?.lab !== null && moduleTemps?.lab !== undefined ? `${moduleTemps.lab.toFixed(1)}°C` : "Auto";
     }
-    if (blockName.includes("Energy") || blockName.includes("Generator")) return `${(lqRef + 8.5).toFixed(1)}°C`;
-    if (blockName.includes("Fuel")) return `${Math.max(-10, (outsideTemp || -15) + 12).toFixed(1)}°C`;
-    return `${(lqRef - 0.5).toFixed(1)}°C`;
+    if (blockName.includes("Storage") || blockName.includes("Logistics") || blockName.includes("Fuel")) {
+        return moduleTemps?.storage !== null && moduleTemps?.storage !== undefined ? `${moduleTemps.storage.toFixed(1)}°C` : "Auto";
+    }
+    if (moduleTemps?.lq !== null && moduleTemps?.lq !== undefined) {
+        return `${moduleTemps.lq.toFixed(1)}°C`;
+    }
+    return "Auto";
 };
 
-function PartitionBlock({ width, height, depth, position, colorIndex, blockName, isActive, onToggle, outsideTemp, activeCategory, moduleTemps }) {
+function PartitionBlock({ width, height, depth, position, colorIndex, blockName, isActive, onToggle, activeCategory, moduleTemps }) {
     const colorHex = COLORS[colorIndex % COLORS.length];
     let matchesCategory = false;
     if (activeCategory === "Energy") {
@@ -37,7 +38,7 @@ function PartitionBlock({ width, height, depth, position, colorIndex, blockName,
     const emissiveIntensity = isHighlighted ? 1.5 : isActive ? 0.6 : 0;
     const boxOpacity = isDimmed ? 0.05 : isHighlighted ? 0.9 : isActive ? 0.75 : 0.45;
     const borderOpacity = isDimmed ? 0.05 : isHighlighted ? 0.9 : 0.6;
-    const displayTemp = getRoomTemp(blockName, colorIndex, moduleTemps, outsideTemp);
+    const displayTemp = getRoomTemp(blockName, moduleTemps);
 
     const matRef2 = useRef();
     const matRef3 = useRef();
