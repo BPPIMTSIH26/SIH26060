@@ -7,7 +7,7 @@
   <!-- Hackathon Meta Badges -->
   <a href="https://sih.gov.in"><img src="https://img.shields.io/badge/Smart_India_Hackathon-2026-0284c7?style=flat-square" alt="SIH 2026" /></a>
   <a href="https://github.com/BPPIMTSIH26"><img src="https://img.shields.io/badge/Organization-BPPIMTSIH26-4f46e5?style=flat-square" alt="Organization" /></a>
-  <a href="https://github.com/BPPIMTSIH26"><img src="https://img.shields.io/badge/Team-ORION-F4C430?style=flat-square" alt="Organization" /></a>
+  <a href="https://github.com/BPPIMTSIH26"><img src="https://img.shields.io/badge/Team-ORION69-F4C430?style=flat-square" alt="Organization" /></a>
   <a href="https://github.com/BPPIMTSIH26/SIH26060"><img src="https://img.shields.io/badge/Problem_Statement_ID-SIH26060-059669?style=flat-square" alt="Problem Statement" /></a>
 
   <!-- Technology Stack Badges -->
@@ -34,7 +34,7 @@ This system provides real-time monitoring, a Rule-Based Risk & Alert System, and
 <div align="center">
 
 > **Smart India Hackathon (SIH 2026) | Problem Statement ID: SIH26060**  
-> **Team: ORION | Team ID: ------**  
+> **Team: ORION69 | Team ID: 166172**  
 > **Institution:** B.P. Poddar Institute of Management & Technology (**BPPIMT**)  
 > **Lead Architect & Full-Stack Engineer:** **[Sayantan Pachal](https://github.com/sayantan-pachal)**
 </div>
@@ -175,6 +175,49 @@ The command dashboard provides an interactive WebGL digital twin of the Maitri a
 
 - **End-to-End Tracking:** Enforces a rigid lifecycle for all critical resources: *Requested → Authority Approved → Processing → In Transit → Delivered.*
 - **Telemetry Syncing:** Prevents resource depletion by automatically syncing projected delivery ETAs with the live inventory burn-rate engine.
+
+```mermaid
+flowchart LR
+    A["👤 Station Master"]
+    B["📝 Create Requisition"]
+    C["⚡ Order API / Transactional Ledger"]
+    D{"🛡️ Authority Review"}
+    E["📦 Logistics Processing"]
+    F["🚚 In Transit"]
+    G["📍 Delivered"]
+    H["📊 Inventory Sync"]
+    K["❌ Requisition Rejected"]
+
+    A --> B
+    B --> C
+    C --> D
+
+    D -->|Approved| E
+    D -->|Rejected| K
+
+    E --> F
+    F --> G
+    G --> H
+
+    classDef user fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#172554
+    classDef api fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#78350f
+    classDef approval fill:#e0e7ff,stroke:#4f46e5,stroke-width:2px,color:#312e81
+    classDef logistics fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d
+    classDef transit fill:#cffafe,stroke:#0891b2,stroke-width:2px,color:#164e63
+    classDef inventory fill:#ccfbf1,stroke:#0f766e,stroke-width:2px,color:#134e4a
+    classDef rejected fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
+
+    class A user
+    class B,C api
+    class D approval
+    class E logistics
+    class F transit
+    class G,H inventory
+    class I dashboard
+    class J report
+    class K rejected
+```
+
 
 ### 5. 🛡️ Access Control (RBAC)
 
@@ -557,7 +600,7 @@ The Polar Twin backend is strictly segregated into rapid telemetry streams ("Fas
 
 ## 👥 Hackathon Team & Acknowledgements
 
-- **Team Name**: **ORION**
+- **Team Name**: **ORION69**
 - **Organization**: **BPPIMTSIH26** (B.P. Poddar Institute of Management and Technology)
 - **Smart India Hackathon 2026**: Problem Statement **SIH26060**
 - **Project Title**: NCPOR Polar Twin Command
@@ -595,7 +638,7 @@ Unauthorized copying, modification, distribution, or commercial use of this repo
 
 <div align="center">
   <p>
-    <sub>Engineered with precision for Smart India Hackathon 2026. <b>NCPOR Polar Twin Command by ORION</b>.</sub><br />
+    <sub>Engineered with precision for Smart India Hackathon 2026. <b>NCPOR Polar Twin Command by ORION69</b>.</sub><br />
     <sub>Documented by Sayantan Pachal</sub>
   </p>
 </div>
