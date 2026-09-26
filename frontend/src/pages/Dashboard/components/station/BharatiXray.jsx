@@ -6,20 +6,20 @@ import { useFrame } from "@react-three/fiber";
 
 const COLORS = ["#3b82f6", "#22c55e", "#eab308", "#f97316", "#14b8a6"];
 
-const getRoomTemp = (blockName, colorIndex, moduleTemps, outsideTemp) => {
-    const lqRef = moduleTemps?.lq ?? 19.5;
-    if (blockName.includes("Main Lab")) return `${(moduleTemps?.lab ?? 19.0).toFixed(1)}°C`;
-    if (blockName.includes("Storage")) return `${(moduleTemps?.storage ?? -5.0).toFixed(1)}°C`;
-    if (blockName.includes("Living Quarters")) return `${(lqRef + (colorIndex % 3) * 0.1).toFixed(1)}°C`;
-    if (blockName.includes("Hospital") || blockName.includes("Office") || blockName.includes("Canteen") || blockName.includes("Auditorium")) {
-        return `${(lqRef - 0.2 + (colorIndex % 2) * 0.2).toFixed(1)}°C`;
+const getRoomTemp = (blockName, moduleTemps) => {
+    if (blockName.includes("Main Lab")) {
+        return moduleTemps?.lab !== null && moduleTemps?.lab !== undefined ? `${moduleTemps.lab.toFixed(1)}°C` : "Auto";
     }
-    if (blockName.includes("Energy")) return `${(lqRef + 8.5).toFixed(1)}°C`;
-    const fallback = outsideTemp ? Math.max(18, Math.min(24, outsideTemp + 35)) : lqRef;
-    return `${fallback.toFixed(1)}°C`;
+    if (blockName.includes("Storage")) {
+        return moduleTemps?.storage !== null && moduleTemps?.storage !== undefined ? `${moduleTemps.storage.toFixed(1)}°C` : "Auto";
+    }
+    if (moduleTemps?.lq !== null && moduleTemps?.lq !== undefined) {
+        return `${moduleTemps.lq.toFixed(1)}°C`;
+    }
+    return "Auto";
 };
 
-function PartitionBlock({ width, height, depth, position, colorIndex, blockName, isActive, onToggle, outsideTemp, activeCategory, moduleTemps }) {
+function PartitionBlock({ width, height, depth, position, colorIndex, blockName, isActive, onToggle, activeCategory, moduleTemps }) {
     const colorHex = COLORS[colorIndex % COLORS.length];
     let matchesCategory = false;
     if (activeCategory === "Energy") {
@@ -38,7 +38,7 @@ function PartitionBlock({ width, height, depth, position, colorIndex, blockName,
     const boxOpacity = isDimmed ? 0.05 : isHighlighted ? 0.9 : isActive ? 0.9 : 0.65;
     const sideOpacity = isDimmed ? 0.05 : isHighlighted ? 0.95 : isActive ? 0.95 : 0.85;
     const borderOpacity = isDimmed ? 0.05 : isHighlighted ? 0.9 : 0.6;
-    const displayTemp = getRoomTemp(blockName, colorIndex, moduleTemps, outsideTemp);
+    const displayTemp = getRoomTemp(blockName, moduleTemps);
 
     const matRef2 = useRef();
     const matRef3 = useRef();

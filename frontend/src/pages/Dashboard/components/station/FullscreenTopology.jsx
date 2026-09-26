@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/immutability */
 import React, { useMemo, Suspense, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Navigation, Thermometer, Gauge, Loader2, X, Layers } from "lucide-react";
@@ -58,6 +60,12 @@ const BHARATI_DOME_CONFIG = { d1X: -22.30, d1Z: -10.10, d2X: 1.60, d2Z: -21.30 }
 const formatVal = (val, decimals = 1) => {
     const num = Number(val);
     return val === undefined || val === null || Number.isNaN(num) ? (0).toFixed(decimals) : num.toFixed(decimals);
+};
+
+const extractModuleTemp = (m) => {
+    const raw = m?.thermal_management?.indoor_temperature_c ?? m?.indoor_temperature_c ?? m?.temperature;
+    const num = Number(raw);
+    return raw !== undefined && raw !== null && !Number.isNaN(num) ? num : null;
 };
 
 function Model({ url, viewMode = "normal", isMaitri = false, isBharati = false, outsideTemp, activeCategory, moduleTemps }) {
@@ -157,24 +165,26 @@ export default function FullscreenTopology({ activeStation, modules = [], enviro
         modules.forEach((m) => {
             if (m.module_id) map.set(m.module_id, m);
             if (m.id) map.set(m.id, m);
+            if (m.name) map.set(m.name.toLowerCase(), m);
         });
         return map;
     }, [modules]);
 
     const moduleTemps = useMemo(() => {
-        const getTemp = (keys, fallback) => {
+        const getTemp = (keys) => {
             for (const k of keys) {
-                const val = modulesMap.get(k)?.thermal_management?.indoor_temperature_c;
-                if (val !== undefined && val !== null && !Number.isNaN(Number(val))) return Number(val);
+                const mod = modulesMap.get(k) || modulesMap.get(k.toLowerCase());
+                const temp = extractModuleTemp(mod);
+                if (temp !== null) return temp;
             }
-            return fallback;
+            return null;
         };
-        const lq = getTemp(["MOD-LQ-001", "living_quarters"], 19.5);
+        const lq = getTemp(["MOD-LQ-001", "living_quarters", "living quarters"]);
         return {
             lq,
-            lab: getTemp(["MOD-LAB-001", "main_lab"], 19.0),
-            storage: getTemp(["MOD-STORAGE-001", "storage_module"], -5.0),
-            hvac: getTemp(["HVAC-001", "hvac", "climate_control"], lq),
+            lab: getTemp(["MOD-LAB-001", "main_lab", "main lab"]),
+            storage: getTemp(["MOD-STORAGE-001", "storage_module", "storage bay"]),
+            hvac: getTemp(["HVAC-001", "hvac", "climate_control", "climate control"]),
         };
     }, [modulesMap]);
 
@@ -199,11 +209,11 @@ export default function FullscreenTopology({ activeStation, modules = [], enviro
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {currentLayout.map((config) => {
-                                            const m = modulesMap.get(config.id) || modulesMap.get(config.key);
+                                            const m = modulesMap.get(config.id) || modulesMap.get(config.key) || modulesMap.get(config.name.toLowerCase());
                                             const status = m?.status || "operational";
                                             const clr = STATUS_COLORS[status] || STATUS_COLORS.ok;
-                                            const rawTemp = m?.thermal_management?.indoor_temperature_c ?? (config.id === "HVAC-001" ? moduleTemps.lq : undefined);
-                                            const temp = rawTemp !== undefined ? formatVal(rawTemp, 1) : formatVal(moduleTemps.lq, 1);
+                                            const liveTemp = extractModuleTemp(m);
+                                            const temp = liveTemp !== null ? formatVal(liveTemp, 1) : "Auto";
                                             return (
                                                 <div key={config.id} className="bg-white/5 dark:bg-black/20 border border-white/10 dark:border-white/5 rounded-lg p-2 flex flex-col justify-between overflow-hidden">
                                                     <div className="flex justify-between items-start mb-2">
@@ -221,7 +231,9 @@ export default function FullscreenTopology({ activeStation, modules = [], enviro
                                                     <div className="grid grid-cols-2 bg-black/30 dark:bg-black/50 rounded border border-white/5 divide-x divide-white/10 overflow-hidden">
                                                         <div className="flex items-center justify-center gap-1 p-1 whitespace-nowrap overflow-hidden">
                                                             <Thermometer className="w-3 h-3 text-slate-300 shrink-0" />
-                                                            <span className="text-[0.65rem] font-mono font-semibold text-slate-100 truncate">{temp}°C</span>
+                                                            <span className="text-[0.65rem] font-mono font-semibold text-slate-100 truncate">
+                                                                {temp}{temp !== "Auto" && "°C"}
+                                                            </span>
                                                         </div>
                                                         <div className="flex items-center justify-center gap-1 p-1 whitespace-nowrap overflow-hidden">
                                                             <Gauge className="w-3 h-3 text-slate-300 shrink-0" />
