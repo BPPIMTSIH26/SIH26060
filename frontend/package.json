@@ -3,6 +3,15 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "author": "ORION69",
+  "contributors": [
+    "Sayantan Pachal <https://github.com/sayantan-pachal>",
+    "Shivam Gupta <https://github.com/shiv2345king>",
+    "Shougata Sikder <https://github.com/Shougata2003>",
+    "Ishika Chowdhury <https://github.com/i5hika0x>",
+    "Narayan Kumar Jha <https://github.com/narayan-nkj>",
+    "Ahana <https://github.com/I-Lawrence>"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
