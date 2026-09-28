@@ -12,6 +12,7 @@
 
   <!-- Technology Stack Badges -->
   <a href="#"><img src="https://img.shields.io/badge/React-Frontend-blue?logo=react&logoColor=white" alt="React" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Three.js-3D_WebGL-000000?logo=threedotjs&logoColor=white" alt="Three.js" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Vite-Build_Tool-646CFF?logo=vite&logoColor=white" alt="Vite" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Tailwind_CSS-Styling-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Node.js-Backend-339933?logo=nodedotjs&logoColor=white" alt="Node.js" /></a>
@@ -27,7 +28,7 @@ This system provides real-time monitoring, a Rule-Based Risk & Alert System, and
 <div align="center">
 <!-- Quick Action Links -->
   <a href="https://ncporpolartwin.vercel.app"><img src="https://img.shields.io/badge/Live_Preview-View_Application-10b981?style=flat-square&logo=vercel&logoColor=white" alt="Live Preview" /></a>
-  <a href="https://ncporpolartwin.vercel.app"><img src="https://img.shields.io/badge/Video_Demo-Watch_Now-FF0000?style=flat-square&logo=youtube&logoColor=white" alt="Video Demo" /></a>
+  <a href="https://youtu.be/j_wYwxT9KGc"><img src="https://img.shields.io/badge/Video_Demo-Watch_Now-FF0000?style=flat-square&logo=youtube&logoColor=white" alt="Video Demo" /></a>
 </div>
 <br>
 
@@ -38,6 +39,18 @@ This system provides real-time monitoring, a Rule-Based Risk & Alert System, and
 > **Institution:** B.P. Poddar Institute of Management & Technology (**BPPIMT**)  
 > **Lead Architect & Full-Stack Engineer:** **[Sayantan Pachal](https://github.com/sayantan-pachal)**
 </div>
+<br>
+
+<div align="center">
+  <!-- Tactical Navigation Bar -->
+  <a href="#-problem-statement-overview-sih-26060"><img src="https://img.shields.io/badge/📌_Problem_Statement-0f172a?style=for-the-badge" alt="Problem Statement" /></a>
+  <a href="#-the-polar-twin-solution"><img src="https://img.shields.io/badge/💡_Architecture-0f172a?style=for-the-badge" alt="Architecture" /></a>
+  <a href="#️-visual-preview"><img src="https://img.shields.io/badge/🖥️_Visual_Preview-0f172a?style=for-the-badge" alt="Visual Preview" /></a>
+  <a href="#️-core-system-capabilities"><img src="https://img.shields.io/badge/⚙️_Capabilities-0f172a?style=for-the-badge" alt="Capabilities" /></a>
+  <a href="#performance--optimization"><img src="https://img.shields.io/badge/⚡_Benchmarks-0f172a?style=for-the-badge" alt="Benchmarks" /></a>
+  <a href="#-quick-start-guide"><img src="https://img.shields.io/badge/🚀_Quick_Start-0f172a?style=for-the-badge" alt="Quick Start" /></a>
+  <a href="#-rest-api-reference"><img src="https://img.shields.io/badge/📡_API_Docs-0f172a?style=for-the-badge" alt="API Docs" /></a>
+</div>
 
 ---
 
@@ -45,7 +58,7 @@ This system provides real-time monitoring, a Rule-Based Risk & Alert System, and
 
 | Attribute | Specification Details |
 | :--- | :--- |
-| **Problem Statement ID** | **26060** |
+| **Problem Statement ID** | **SIH26060** |
 | **Problem Statement Title** | **Digital Platform for efficient remote management of Indian Antarctic Research Stations** |
 | **Description** | Develop a **Digital Twin framework for Maitri and Bharati stations** integrating **infrastructure, energy, logistics, and environmental monitoring** for efficient remote management. |
 | **Organization** | **Ministry of Earth Sciences (MoES)** |
@@ -213,8 +226,6 @@ flowchart LR
     class E logistics
     class F transit
     class G,H inventory
-    class I dashboard
-    class J report
     class K rejected
 ```
 
@@ -256,6 +267,28 @@ The 3D visualization is not a standalone animation layer. It is connected to the
 - Station-specific telemetry is presented alongside the corresponding 3D twin.
 - Maitri and Bharati can be switched without changing the underlying monitoring architecture.
 - The visualization therefore acts as a spatial operational interface over the simulated station state rather than a purely decorative 3D scene.
+
+## Performance & Optimization
+
+### Network Efficiency
+
+The system achieves bandwidth optimization through the Fast Lane architecture:
+
+<p align="center">
+  <img src="./archive/network-telemetry.jpeg" alt="Network Telemetry Performance" width="50%">
+</p>
+
+*DevTools Network capture from ``production*`` demo showing real API payload sizes*
+
+**Key Metrics:**
+
+- Individual telemetry calls: 1.5–2.0 KB
+- Station data calls: 0.1–0.3 KB  
+- Full dashboard sync: ~5.9 KB (bundled: inventory, logistics, energy, infrastructure, 3D view)
+- Latency: 550–900ms (realistic for satellite connectivity)
+
+This demonstrates our claim of ~4KB payload efficiency in real-world Antarctic bandwidth constraints.
+> Last verified: 28/09/26. Metrics captured during final demo build with production* telemetry load.
 
 ## 🖥️ System Architecture & UI Tour
 
@@ -625,7 +658,7 @@ The Polar Twin backend is strictly segregated into rapid telemetry streams ("Fas
 
 ## 📄 License
 
-**© 2026 ORION - B. P. Poddar Institute of Management & Technology. All Rights Reserved.**
+**© 2026 ORION69 - B. P. Poddar Institute of Management & Technology. All Rights Reserved.**
 
 This project and its source code are provided exclusively for the purposes of the **Smart India Hackathon 2026** evaluation and demonstration. 
 
