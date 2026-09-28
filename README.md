@@ -1,4 +1,4 @@
-﻿<h1 align="center">🧊 NCPOR Polar Twin: Antarctic Operations Command</h1>
+<h1 align="center">🧊 NCPOR Polar Twin: Antarctic Operations Command</h1>
 
 <h3 align="center">Comprehensive Digital Twin Simulation & Logistics Intelligence</h3>
 <br>
@@ -604,6 +604,7 @@ The Polar Twin backend is strictly segregated into rapid telemetry streams ("Fas
 - **Organization**: **BPPIMTSIH26** (B.P. Poddar Institute of Management and Technology)
 - **Smart India Hackathon 2026**: Problem Statement **SIH26060**
 - **Project Title**: NCPOR Polar Twin Command
+- **Contributors**: See full team roster in [CONTRIBUTORS.md](./CONTRIBUTORS.md)
 
 ### Team Structure & Contributions
 
@@ -615,8 +616,8 @@ The Polar Twin backend is strictly segregated into rapid telemetry streams ("Fas
 
 #### ⚓ Engineering & Domain Specialists
 
-- 🧮 **Ishika Chowdhury** ([@i5hika0x](https://github.com/i5hika0x)) - **Algorithmic Simulation & Event-Driven Systems Specialist**
 - 🖥️ **Narayan Kumar Jha** ([@narayan-nkj](https://github.com/narayan-nkj)) - **Frontend Architecture & UI/UX Design Specialist**
+- 🧮 **Ishika Chowdhury** ([@i5hika0x](https://github.com/i5hika0x)) - **Algorithmic Simulation & Event-Driven Systems Specialist**
 - 📊 **Ahana** ([@I-Lawrence](https://github.com/I-Lawrence)) - **Telemetry Processing & Automated Reporting Specialist**
 
 <br>
